@@ -147,6 +147,11 @@ function EditorCanvas({ editor }: { editor: EditorContextType }) {
     });
   }, [editor.blocks, editor.selectedBlocks]);
 
+  const visibleBlocks = React.useMemo(
+    () => editor.blocks.filter((block) => block.visible),
+    [editor.blocks]
+  );
+
   return (
     <div ref={canvasWrapperRef} className="flex-1 w-full h-full relative">
       <InfiniteViewer
@@ -183,38 +188,41 @@ function EditorCanvas({ editor }: { editor: EditorContextType }) {
                 background: editor.canvasState.background,
               }}
             />
-            {editor.blocks
-              .filter((e) => e.visible)
-              .map((block) => {
-                if (block.type === "text") {
-                  return (
-                    <TextBlock
-                      key={block.id}
-                      block={block as IEditorBlockText}
-                      editor={editor}
-                    />
-                  );
-                }
-                if (block.type === "image") {
-                  return (
-                    <ImageBlock
-                      key={block.id}
-                      block={block as IEditorBlockImage}
-                      editor={editor}
-                    />
-                  );
-                }
-                if (block.type === "frame") {
-                  return (
-                    <FrameBlock
-                      key={block.id}
-                      block={block as IEditorBlockFrame}
-                      editor={editor}
-                    />
-                  );
-                }
-                return null;
-              })}
+            {visibleBlocks.map((block, index) => {
+              const layerStyle = { zIndex: index + 2 };
+
+              if (block.type === "text") {
+                return (
+                  <TextBlock
+                    key={block.id}
+                    block={block as IEditorBlockText}
+                    editor={editor}
+                    style={layerStyle}
+                  />
+                );
+              }
+              if (block.type === "image") {
+                return (
+                  <ImageBlock
+                    key={block.id}
+                    block={block as IEditorBlockImage}
+                    editor={editor}
+                    style={layerStyle}
+                  />
+                );
+              }
+              if (block.type === "frame") {
+                return (
+                  <FrameBlock
+                    key={block.id}
+                    block={block as IEditorBlockFrame}
+                    editor={editor}
+                    style={layerStyle}
+                  />
+                );
+              }
+              return null;
+            })}
           </div>
           <Moveable
             target={editor.selectedBlocks}

@@ -23,6 +23,7 @@ const placeCaretAtEnd = (element: HTMLElement) => {
 function TextBlock({
   block,
   editor,
+  style,
   ...props
 }: {
   block: IEditorBlockText;
@@ -124,6 +125,7 @@ function TextBlock({
     <CommonBlock
       ref={ref}
       style={{
+        ...(style ?? {}),
         wordWrap: "break-word",
         color: block.color,
         fontFamily: `${block.font.family}, san-serif`,
