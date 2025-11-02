@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as React from "react";
 import { v4 as uuid } from "uuid";
 import { toPng } from "html-to-image";
@@ -60,13 +59,16 @@ export default function useEditor(defaultTemplate?: Template) {
   });
 
   // calculate center position
-  const calculatePosition = (width: number, height: number) => {
-    const { size } = canvasState;
-    return {
-      x: Math.round(size.width / 2 - width / 2),
-      y: Math.round(size.height / 2 - height / 2),
-    };
-  };
+  const calculatePosition = React.useCallback(
+    (width: number, height: number) => {
+      const { size } = canvasState;
+      return {
+        x: Math.round(size.width / 2 - width / 2),
+        y: Math.round(size.height / 2 - height / 2),
+      };
+    },
+    [canvasState]
+  );
 
   // change editor mode
   const changeMode = React.useCallback((mode: ICanvasState["mode"]) => {
@@ -81,36 +83,42 @@ export default function useEditor(defaultTemplate?: Template) {
     setCanvasState((prevState) => ({ ...prevState, mode: "select" }));
   }, []);
 
-  const duplicateBlock = React.useCallback((prevId: string) => {
-    const id = uuid();
-    setBlocks((prevBlocks) => {
-      const block = prevBlocks.find((e) => e.id === prevId);
-      const index = prevBlocks.findIndex((e) => e.id === prevId);
-      if (block && index !== -1) {
-        const newBlock = { ...block };
-        newBlock.id = id;
-        newBlock.label = `Frame ${prevBlocks.length + 1}`;
-        newBlock.y += 10;
-        newBlock.x += 10;
-        return [
-          ...prevBlocks.slice(0, index + 1),
-          newBlock,
-          ...prevBlocks.slice(index + 1),
-        ];
-      }
-      return [...prevBlocks];
-    });
-    setNewAddedBlock(id);
-    onAddBlock();
-  }, []);
+  const duplicateBlock = React.useCallback(
+    (prevId: string) => {
+      const id = uuid();
+      setBlocks((prevBlocks) => {
+        const block = prevBlocks.find((e) => e.id === prevId);
+        const index = prevBlocks.findIndex((e) => e.id === prevId);
+        if (block && index !== -1) {
+          const newBlock = { ...block };
+          newBlock.id = id;
+          newBlock.label = `Frame ${prevBlocks.length + 1}`;
+          newBlock.y += 10;
+          newBlock.x += 10;
+          return [
+            ...prevBlocks.slice(0, index + 1),
+            newBlock,
+            ...prevBlocks.slice(index + 1),
+          ];
+        }
+        return [...prevBlocks];
+      });
+      setNewAddedBlock(id);
+      onAddBlock();
+    },
+    [onAddBlock]
+  );
 
-  const deleteBlock = React.useCallback((id: string) => {
-    setBlocks((prevBlocks) => {
-      return prevBlocks.filter((e) => e.id !== id);
-    });
-    setNewAddedBlock(id);
-    onAddBlock();
-  }, []);
+  const deleteBlock = React.useCallback(
+    (id: string) => {
+      setBlocks((prevBlocks) => {
+        return prevBlocks.filter((e) => e.id !== id);
+      });
+      setNewAddedBlock(id);
+      onAddBlock();
+    },
+    [onAddBlock]
+  );
 
   const showHideBlock = React.useCallback((id: string) => {
     setSelectedBlocks([]);
@@ -122,7 +130,7 @@ export default function useEditor(defaultTemplate?: Template) {
   }, []);
 
   const updateBlockValues = React.useCallback(
-    (id: string, values: Partial<IEditorBlock>) => {
+    (id: string, values: Partial<Omit<IEditorBlocks, "type">>) => {
       setBlocks((prevBlocks) =>
         prevBlocks.map((item) =>
           id === item.id ? { ...item, ...values } : item
@@ -182,7 +190,7 @@ export default function useEditor(defaultTemplate?: Template) {
     ]);
     setNewAddedBlock(defaultSettings.id);
     onAddBlock();
-  }, []);
+  }, [calculatePosition, onAddBlock]);
 
   // Add a frame block to the canvas
   const addFrameBlock = React.useCallback(() => {
@@ -208,7 +216,7 @@ export default function useEditor(defaultTemplate?: Template) {
     ]);
     setNewAddedBlock(defaultSettings.id);
     onAddBlock();
-  }, []);
+  }, [calculatePosition, onAddBlock]);
 
   // Add a image block to the canvas
   const addImageBlock = React.useCallback(
@@ -239,7 +247,7 @@ export default function useEditor(defaultTemplate?: Template) {
       setNewAddedBlock(defaultSettings.id);
       onAddBlock();
     },
-    []
+    [calculatePosition, onAddBlock]
   );
 
   const bringForwardBlock = (id: string) => {
@@ -384,10 +392,12 @@ export default function useEditor(defaultTemplate?: Template) {
   // Delete on backspace press
   React.useEffect(() => {
     const handleKeyUp = (event: KeyboardEvent) => {
-      const focusedElement = document.activeElement as any;
+      const focusedElement = document.activeElement;
       const isEditable =
-        ["INPUT", "TEXTAREA"].includes(focusedElement?.tagName) ||
-        focusedElement.hasAttribute("contentEditable");
+        (focusedElement instanceof HTMLElement &&
+          (["INPUT", "TEXTAREA"].includes(focusedElement.tagName) ||
+            focusedElement.hasAttribute("contentEditable"))) ||
+        false;
       if (event.key === "Backspace" && selectedBlocks.length && !isEditable) {
         const ids = selectedBlocks.map((e) => e?.id || "");
         setSelectedBlocks([]);
@@ -403,11 +413,11 @@ export default function useEditor(defaultTemplate?: Template) {
     return () => {
       document.removeEventListener("keyup", handleKeyUp);
     };
-  }, [selectedBlocks.length]);
+  }, [selectedBlocks.length, selectedBlocks]);
 
   React.useEffect(() => {
     loadFonts(blocks);
-  }, []);
+  }, [blocks]);
 
   React.useEffect(() => {
     if (isInitialRender.current) {
@@ -490,7 +500,8 @@ export default function useEditor(defaultTemplate?: Template) {
         const validatedTemplate = templateSchema.parse(template);
         const newBlocks = validatedTemplate.blocks || [];
         const newSize = validatedTemplate.size || canvasState.size;
-        const newBackground = validatedTemplate.background || canvasState.background;
+        const newBackground =
+          validatedTemplate.background || canvasState.background;
 
         setBlocks(newBlocks);
         setCanvasState((prevState) => ({
@@ -530,21 +541,24 @@ export default function useEditor(defaultTemplate?: Template) {
     [canvasState.size, canvasState.background]
   );
 
-  const addBlock = React.useCallback((block: IEditorBlocks) => {
-    try {
-      // Validate block against schema
-      const validatedBlock = blockSchema.parse(block);
-      setBlocks((prevBlocks) => [...prevBlocks, validatedBlock]);
-      setNewAddedBlock(validatedBlock.id);
-      onAddBlock();
-    } catch (error) {
-      console.error("Failed to validate block:", error);
-      // Fallback to unvalidated block if validation fails
-      setBlocks((prevBlocks) => [...prevBlocks, block]);
-      setNewAddedBlock(block.id);
-      onAddBlock();
-    }
-  }, [onAddBlock]);
+  const addBlock = React.useCallback(
+    (block: IEditorBlocks) => {
+      try {
+        // Validate block against schema
+        const validatedBlock = blockSchema.parse(block);
+        setBlocks((prevBlocks) => [...prevBlocks, validatedBlock]);
+        setNewAddedBlock(validatedBlock.id);
+        onAddBlock();
+      } catch (error) {
+        console.error("Failed to validate block:", error);
+        // Fallback to unvalidated block if validation fails
+        setBlocks((prevBlocks) => [...prevBlocks, block]);
+        setNewAddedBlock(block.id);
+        onAddBlock();
+      }
+    },
+    [onAddBlock]
+  );
 
   return {
     blocks,
