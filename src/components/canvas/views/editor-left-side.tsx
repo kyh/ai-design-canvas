@@ -3,6 +3,7 @@ import { HiDotsHorizontal } from "react-icons/hi";
 import { AiOutlineEyeInvisible, AiOutlineEye } from "react-icons/ai";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ModeToggle } from "@/components/mode-toggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -262,7 +263,7 @@ function EditorLeftSide() {
   return (
     <div className="editor-left-side fixed left-3 top-3 bottom-3 z-20 flex w-64 flex-col border border-border/50 bg-background/95 backdrop-blur shadow-xl rounded-[1.25rem] overflow-hidden">
       <p className="p-4 pb-3 text-sm font-semibold">Layers</p>
-      <ScrollArea>
+      <ScrollArea className="flex-1">
         {blocks.map((block) => (
           <BlockItem
             key={block.id}
@@ -281,6 +282,9 @@ function EditorLeftSide() {
           />
         ))}
       </ScrollArea>
+      <div className="border-t border-border p-2 flex items-center justify-between gap-2">
+        <ModeToggle />
+      </div>
     </div>
   );
 }

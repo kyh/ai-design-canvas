@@ -27,7 +27,7 @@ function OpacityControl({ blockId, className }: OpacityControlProps) {
       />
       <input
         type="range"
-        className="h-1 w-full cursor-pointer"
+        className="h-1 w-full cursor-pointer appearance-none rounded-lg bg-foreground/10 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-[10px] [&::-webkit-slider-thumb]:h-[10px] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:cursor-pointer"
         value={block.opacity ?? 0}
         max={100}
         min={0}

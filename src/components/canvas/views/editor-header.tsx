@@ -4,7 +4,6 @@ import { FiDownload } from "react-icons/fi";
 import { GrUndo, GrRedo } from "react-icons/gr";
 import ButtonsGroup from "@/components/ui/buttons-group";
 import { Button } from "@/components/ui/button";
-import { ModeToggle } from "@/components/mode-toggle";
 import { useEditorStore } from "../use-editor";
 import { BlockIcon } from "../utils";
 import { cn } from "@/lib/utils";
@@ -33,12 +32,10 @@ function EditorHeader({ className }: { className?: string }) {
   return (
     <>
       <div
-        className={
-          cn(
-            "fixed top-3 left-1/2 z-20 -translate-x-1/2 flex items-center gap-2 border border-border/50 bg-background/95 backdrop-blur shadow-lg rounded-[1.25rem] p-2",
-            className
-          )
-        }
+        className={cn(
+          "fixed top-3 left-1/2 z-20 -translate-x-1/2 flex items-center gap-2 border border-border/50 bg-background/95 backdrop-blur shadow-lg rounded-[1.25rem] p-2",
+          className
+        )}
       >
         <ButtonsGroup
           buttons={[
@@ -97,12 +94,9 @@ function EditorHeader({ className }: { className?: string }) {
           ]}
         />
         <div className="w-px h-6 bg-border mx-1" />
-        <div className="flex items-center gap-2">
-          <ModeToggle />
-          <Button className="gap-2 rounded-xl h-10 px-6" onClick={downloadImage}>
-            <FiDownload /> Export
-          </Button>
-        </div>
+        <Button className="gap-2 rounded-xl h-10 px-6" onClick={downloadImage}>
+          <FiDownload /> Export
+        </Button>
       </div>
       <input
         type="file"

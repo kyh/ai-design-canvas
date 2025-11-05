@@ -168,5 +168,4 @@ export type IEditorBlockFrame = z.infer<typeof frameBlockSchema>;
 export type IEditorBlockImage = z.infer<typeof imageBlockSchema>;
 export type IEditorBlockType = IEditorBlocks["type"];
 export type Template = z.infer<typeof templateSchema>;
-export type TemplateSchema = z.infer<typeof templateSchema>;
 export type ICanvasState = z.infer<typeof canvasStateSchema>;

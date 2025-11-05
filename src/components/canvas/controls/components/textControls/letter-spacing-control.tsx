@@ -34,7 +34,7 @@ function LetterSpacingControl({ blockId, block, className }: LetterSpacingContro
       <NumberInput min={-5} max={200} value={resolvedBlock.letterSpacing} onChange={onChange} />
       <input
         type="range"
-        className="h-1 w-full cursor-pointer"
+        className="h-1 w-full cursor-pointer appearance-none rounded-lg bg-foreground/10 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-[10px] [&::-webkit-slider-thumb]:h-[10px] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:cursor-pointer"
         value={resolvedBlock.letterSpacing}
         max={50}
         min={0}

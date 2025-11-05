@@ -2,11 +2,11 @@
 
 import * as React from "react";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
 import { cn } from "@/lib/utils";
 import { blockSchema } from "@/lib/schema";
-import type { CustomUIMessage } from "@/lib/ai-tools";
-import { v4 as uuid } from "uuid";
+import type { z } from "zod";
+import type { ChatUIMessage } from "@/ai/messages/types";
+import type { DataPart } from "@/ai/messages/data-parts";
 import { Button } from "./ui/button";
 import { Loader2, Send, X } from "lucide-react";
 import { useEditorStore } from "./canvas/use-editor";
@@ -16,31 +16,30 @@ export default function AIPrompt() {
   const [error, setError] = React.useState<string | null>(null);
   const addBlock = useEditorStore((state) => state.addBlock);
 
-  const { sendMessage, status } = useChat<CustomUIMessage>({
-    transport: new DefaultChatTransport({ api: "/api/chat" }),
+  const { sendMessage, status } = useChat<ChatUIMessage>({
     onError: (error) => {
       setError(error.message || "Failed to generate block");
     },
-    onToolCall: async ({ toolCall }) => {
+    onData: (dataPart) => {
       try {
-        // With CustomUIMessage, toolCall.input is now properly typed based on the tool's inputSchema
-        // The type is automatically inferred from the tool definition
-        const blockInput = toolCall.input as Record<string, unknown>;
+        const data = dataPart.data as DataPart;
+        let block: z.infer<typeof blockSchema> | undefined;
 
-        // Add ID to the block (same as server-side execute function)
-        const blockWithId = {
-          ...blockInput,
-          id: uuid(),
-        };
+        if (data["generate-text-block"]) {
+          block = data["generate-text-block"].block;
+        } else if (data["generate-frame-block"]) {
+          block = data["generate-frame-block"].block;
+        } else if (data["generate-image-block"]) {
+          block = data["generate-image-block"].block;
+        }
 
-        // Validate the block structure with ID
-        const validatedBlock = blockSchema.parse(blockWithId);
-
-        // Add the validated block to the canvas
-        addBlock(validatedBlock);
-        setError(null);
+        if (block) {
+          const validatedBlock = blockSchema.parse(block);
+          addBlock(validatedBlock);
+          setError(null);
+        }
       } catch (err) {
-        console.error("Failed to add generated block:", err, toolCall);
+        console.error("Failed to add generated block:", err, dataPart);
         setError(
           err instanceof Error ? err.message : "Failed to add generated block"
         );
@@ -66,9 +65,7 @@ export default function AIPrompt() {
   };
 
   return (
-    <div
-      className="fixed bottom-3 left-1/2 z-50 w-full max-w-2xl -translate-x-1/2"
-    >
+    <div className="fixed bottom-3 left-1/2 z-50 w-full max-w-2xl -translate-x-1/2">
       <div className="mx-4 rounded-3xl border border-border/50 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80 shadow-2xl">
         {error && (
           <div className="flex items-center justify-between border-b border-border bg-destructive/10 px-5 py-2.5 text-sm text-destructive rounded-t-3xl">

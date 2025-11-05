@@ -32,7 +32,7 @@ function TextDecorationControl({ blockId, block, className }: TextDecorationCont
             textDecoration: e.target.value as ITextDecoration,
           });
         }}
-        className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs"
+        className="h-8 w-full rounded-md border border-border bg-background px-2 pr-6 text-xs appearance-none outline-hidden focus:border-primary focus:ring-1 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <option value="inherit">Default</option>
         <option value="overline">Overline</option>
