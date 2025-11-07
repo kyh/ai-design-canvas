@@ -4,7 +4,7 @@ import {
   templateSchema,
   frameBlockSchemaWithoutId,
 } from "@/lib/schema";
-import { v4 as uuid } from "uuid";
+import { generateId } from "@/lib/id-generator";
 
 import type { DataPart } from "../messages/data-parts";
 import description from "./generate-frame-block.md";
@@ -18,7 +18,7 @@ const createBlockWithId = (block: unknown) => {
   const validatedBlock = frameBlockSchemaWithoutId.parse(block);
   const blockWithId = {
     ...validatedBlock,
-    id: uuid(),
+    id: generateId(),
   };
   return templateSchema.shape.blocks.element.parse(blockWithId);
 };

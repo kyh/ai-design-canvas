@@ -2,7 +2,7 @@
 
 import type Konva from "konva";
 import { create } from "zustand";
-import { v4 as uuid } from "uuid";
+import { generateId } from "@/lib/id-generator";
 import type {
   IEditorBlockFrame,
   IEditorBlockImage,
@@ -401,7 +401,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       const position = calculateViewportCenteredPosition(state, 320, 52);
       const defaultBlock = ensureBlockDefaults(
         textBlockSchema.parse({
-          id: uuid(),
+          id: generateId(),
           type: "text",
           label: `Text ${blocks.length + 1}`,
           ...position,
@@ -446,7 +446,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       const position = calculateViewportCenteredPosition(state, 240, 240);
       const defaultBlock = ensureBlockDefaults(
         frameBlockSchema.parse({
-          id: uuid(),
+          id: generateId(),
           type: "frame",
           label: `Frame ${blocks.length + 1}`,
           ...position,
@@ -498,7 +498,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
 
       const defaultBlock = ensureBlockDefaults(
         imageBlockSchema.parse({
-          id: uuid(),
+          id: generateId(),
           type: "image",
           label: `Image ${blocks.length + 1}`,
           ...position,
@@ -539,7 +539,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
         return state;
       }
       const snapshot = createSnapshot(state);
-      const newId = uuid();
+      const newId = generateId();
       const duplicated = parseBlock({
         ...clone(block),
         id: newId,
