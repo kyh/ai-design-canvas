@@ -5,6 +5,7 @@ interface UseCanvasHotkeysOptions {
   setMode: (mode: 'move' | 'select') => void;
   addFrameBlock: () => void;
   addTextBlock: () => void;
+  addArrowBlock: () => void;
   deleteSelectedBlocks: () => void;
 }
 
@@ -22,7 +23,7 @@ const isEditableTarget = (target: EventTarget | null) => {
   return Boolean(target.closest('input, textarea, select, [contenteditable="true"]'));
 };
 
-export const useCanvasHotkeys = ({ setMode, addFrameBlock, addTextBlock, deleteSelectedBlocks }: UseCanvasHotkeysOptions) => {
+export const useCanvasHotkeys = ({ setMode, addFrameBlock, addTextBlock, addArrowBlock, deleteSelectedBlocks }: UseCanvasHotkeysOptions) => {
   const spacePressedRef = React.useRef(false);
   const spacePrevModeRef = React.useRef<'move' | 'select' | null>(null);
 
@@ -99,6 +100,12 @@ export const useCanvasHotkeys = ({ setMode, addFrameBlock, addTextBlock, deleteS
         return;
       }
 
+      if (key === 'a') {
+        addArrowBlock();
+        event.preventDefault();
+        return;
+      }
+
       if (key === 'backspace' || key === 'delete') {
         if (state.selectedIds.length > 0) {
           event.preventDefault();
@@ -139,5 +146,5 @@ export const useCanvasHotkeys = ({ setMode, addFrameBlock, addTextBlock, deleteS
       window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('blur', resetSpaceMode);
     };
-  }, [addFrameBlock, addTextBlock, deleteSelectedBlocks, setMode]);
+  }, [addFrameBlock, addTextBlock, addArrowBlock, deleteSelectedBlocks, setMode]);
 };

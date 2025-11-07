@@ -73,7 +73,7 @@ const flipSchema = z
 
 export const blockBaseSchema = z.object({
   id: z.string(),
-  type: z.enum(["text", "frame", "image"]),
+  type: z.enum(["text", "frame", "image", "arrow"]),
   label: z.string(),
   x: z.number(),
   y: z.number(),
@@ -122,15 +122,27 @@ export const imageBlockSchema = blockBaseSchema.extend({
     .optional(),
 });
 
+export const arrowBlockSchema = blockBaseSchema.extend({
+  type: z.literal("arrow"),
+  points: z.array(z.number()).length(4), // [x1, y1, x2, y2] relative to block position
+  pointerLength: z.number().default(20),
+  pointerWidth: z.number().default(20),
+  fill: z.string().optional(),
+  stroke: z.string().optional(),
+  strokeWidth: z.number().default(4),
+});
+
 export const blockSchema = z.discriminatedUnion("type", [
   textBlockSchema,
   frameBlockSchema,
   imageBlockSchema,
+  arrowBlockSchema,
 ]);
 
 export const textBlockSchemaWithoutId = textBlockSchema.omit({ id: true });
 export const frameBlockSchemaWithoutId = frameBlockSchema.omit({ id: true });
 export const imageBlockSchemaWithoutId = imageBlockSchema.omit({ id: true });
+export const arrowBlockSchemaWithoutId = arrowBlockSchema.omit({ id: true });
 
 // ============================================================
 // Template / Canvas Schemas
@@ -166,6 +178,7 @@ export type IEditorBlocks = z.infer<typeof blockSchema>;
 export type IEditorBlockText = z.infer<typeof textBlockSchema>;
 export type IEditorBlockFrame = z.infer<typeof frameBlockSchema>;
 export type IEditorBlockImage = z.infer<typeof imageBlockSchema>;
+export type IEditorBlockArrow = z.infer<typeof arrowBlockSchema>;
 export type IEditorBlockType = IEditorBlocks["type"];
 export type Template = z.infer<typeof templateSchema>;
 export type ICanvasState = z.infer<typeof canvasStateSchema>;

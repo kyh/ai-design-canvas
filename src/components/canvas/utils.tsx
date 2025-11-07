@@ -1,4 +1,4 @@
-import { BoxIcon, ImageIcon, TextIcon } from "@radix-ui/react-icons";
+import { BoxIcon, ImageIcon, TextIcon, ArrowRightIcon } from "@radix-ui/react-icons";
 import type { IEditorBlockType } from "@/lib/schema";
 
 export function BlockIcon(type: IEditorBlockType) {
@@ -9,6 +9,8 @@ export function BlockIcon(type: IEditorBlockType) {
       return <BoxIcon />;
     case "image":
       return <ImageIcon />;
+    case "arrow":
+      return <ArrowRightIcon />;
     default:
       return <BoxIcon />;
   }

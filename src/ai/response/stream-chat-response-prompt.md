@@ -53,9 +53,8 @@ You have access to the following tools:
    - Supports styling with colors, borders, shadows, rotation, and opacity
 
 3. **Generate Image Block**
-   - Displays images from URLs on the canvas
-   - Use for photos, illustrations, graphics, or visual elements
-   - Can use placeholder URLs if no specific image is provided
+
+   - Adds images to the canvas from URLs
    - Supports various fit modes and positioning options
 
 # Creative Drawing Techniques
@@ -102,8 +101,6 @@ You have access to the following tools:
 ## Image Block Properties
 
 - **url**: Image URL (can use placeholder URLs like 'https://via.placeholder.com/400' for now)
-- **fit**: How image fits ("contain", "cover", "fill", "fitWidth", "fitHeight")
-- **position**: Image position within block ("center", "top", "bottom", "left", "right")
 
 # Key Behavior Principles
 

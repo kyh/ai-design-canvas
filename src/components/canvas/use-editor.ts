@@ -7,6 +7,7 @@ import type {
   IEditorBlockFrame,
   IEditorBlockImage,
   IEditorBlockText,
+  IEditorBlockArrow,
   IEditorBlocks,
   IEditorSize,
   Template,
@@ -15,6 +16,7 @@ import {
   frameBlockSchema,
   imageBlockSchema,
   textBlockSchema,
+  arrowBlockSchema,
 } from "@/lib/schema";
 import { loadFontsForBlocks } from "./services/fonts";
 import { downloadStageAsImage, exportCanvasAsJson } from "./services/export";
@@ -28,6 +30,7 @@ import {
   centerBlockInViewport,
   centerStageWithinContainer,
 } from "./utils/canvas-math";
+import { calculateArrowBounds } from "./utils/arrow-bounds";
 
 type HistoryEntry = Pick<Template, "blocks" | "size" | "background">;
 
@@ -70,6 +73,7 @@ interface EditorActions {
   addTextBlock: () => void;
   addFrameBlock: () => void;
   addImageBlock: (args: { url: string; width: number; height: number }) => void;
+  addArrowBlock: () => void;
   duplicateBlock: (id: string) => void;
   deleteBlock: (id: string) => void;
   deleteSelectedBlocks: () => void;
@@ -513,6 +517,85 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
           visible: true,
           opacity: 100,
         } satisfies IEditorBlockImage)
+      );
+
+      return {
+        ...state,
+        blocksById: {
+          ...state.blocksById,
+          [defaultBlock.id]: defaultBlock,
+        },
+        blockOrder: [...state.blockOrder, defaultBlock.id],
+        selectedIds: [defaultBlock.id],
+        canvas: { ...state.canvas, mode: "select" },
+        history: {
+          undo: [snapshot, ...state.history.undo],
+          redo: [],
+        },
+      };
+    });
+  },
+
+  addArrowBlock: () => {
+    set((state) => {
+      const snapshot = createSnapshot(state);
+      const blocks = blocksArray(state);
+      
+      // Default arrow: horizontal, 200px long, pointing right
+      const points: [number, number, number, number] = [0, 0, 200, 0];
+      
+      // Create a temporary block to calculate bounds
+      const tempBlock: IEditorBlockArrow = {
+        id: "", // Not used for calculation
+        type: "arrow",
+        label: "",
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0,
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+        points,
+        pointerLength: 20,
+        pointerWidth: 20,
+        fill: "#000000",
+        stroke: "#000000",
+        strokeWidth: 4,
+        visible: true,
+        opacity: 100,
+      };
+      
+      const bounds = calculateArrowBounds(tempBlock);
+      
+      // Calculate centered position for the bounding box
+      const position = calculateViewportCenteredPosition(state, bounds.width, bounds.height);
+      
+      // Convert bounding box position to block position (accounting for offset)
+      const actualX = position.x - bounds.offsetX;
+      const actualY = position.y - bounds.offsetY;
+      
+      const defaultBlock = ensureBlockDefaults(
+        arrowBlockSchema.parse({
+          id: generateId(),
+          type: "arrow",
+          label: `Arrow ${blocks.length + 1}`,
+          x: actualX,
+          y: actualY,
+          width: bounds.width,
+          height: bounds.height,
+          rotation: 0,
+          scaleX: 1,
+          scaleY: 1,
+          points: points,
+          pointerLength: 20,
+          pointerWidth: 20,
+          fill: "#000000",
+          stroke: "#000000",
+          strokeWidth: 4,
+          visible: true,
+          opacity: 100,
+        } satisfies IEditorBlockArrow)
       );
 
       return {

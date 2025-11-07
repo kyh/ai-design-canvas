@@ -130,9 +130,14 @@ const BlockItem = React.forwardRef<HTMLDivElement, BlockItemProps>(
             value={label}
             onChange={(event) => setLabel(event.target.value)}
             className={cn(
-              "sidebar-item-label-input flex-1 h-6 cursor-default overflow-hidden text-ellipsis border border-transparent bg-transparent px-1 text-sm text-foreground outline-hidden rounded-md truncate",
-              { "border-border bg-muted cursor-text": editable }
+              "sidebar-item-label-input flex-1 h-6 overflow-hidden text-ellipsis border px-1 text-sm text-foreground outline-hidden rounded-md truncate",
+              editable && "border-border bg-muted",
+              !editable && "border-transparent"
             )}
+            style={{
+              backgroundColor: editable ? undefined : "transparent",
+              cursor: editable ? "text" : undefined,
+            }}
             readOnly={!editable}
             onDoubleClick={(event) => {
               event.stopPropagation();
@@ -158,7 +163,7 @@ const BlockItem = React.forwardRef<HTMLDivElement, BlockItemProps>(
         </button>
         <DropdownMenu>
           <DropdownMenuTrigger
-            className="sidebar-item-actions absolute top-1/2 right-3 -translate-y-1/2 z-[3] invisible"
+            className="sidebar-item-actions absolute top-1/2 right-3 -translate-y-1/2 z-3 invisible"
             asChild
           >
             <button

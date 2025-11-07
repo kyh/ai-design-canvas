@@ -16,6 +16,7 @@ function EditorHeader({ className }: { className?: string }) {
   const addTextBlock = useEditorStore((state) => state.addTextBlock);
   const addFrameBlock = useEditorStore((state) => state.addFrameBlock);
   const addImageBlock = useEditorStore((state) => state.addImageBlock);
+  const addArrowBlock = useEditorStore((state) => state.addArrowBlock);
   const [handleUndo, handleRedo, undoCount, redoCount] = useEditorStore(
     useShallow((state) => [
       state.handleUndo,
@@ -74,6 +75,12 @@ function EditorHeader({ className }: { className?: string }) {
               onClick: () => addFrameBlock(),
               label: "Add Frame",
               hotkey: "F",
+            },
+            {
+              children: BlockIcon("arrow"),
+              onClick: () => addArrowBlock(),
+              label: "Add Arrow",
+              hotkey: "A",
             },
           ]}
           className="hidden md:flex"
