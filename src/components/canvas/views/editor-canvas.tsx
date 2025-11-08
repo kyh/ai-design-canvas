@@ -16,6 +16,7 @@ import type {
   IEditorBlockImage,
   IEditorBlockText,
   IEditorBlockArrow,
+  IEditorBlockHtml,
   IEditorBlocks,
 } from "@/lib/schema";
 import {
@@ -23,6 +24,7 @@ import {
   frameBlockSchema,
   imageBlockSchema,
   arrowBlockSchema,
+  htmlBlockSchema,
 } from "@/lib/schema";
 import { generateId } from "@/lib/id-generator";
 import ZoomHandler from "./zoomable";
@@ -42,6 +44,7 @@ import { useCanvasStore } from "../hooks/use-canvas-store";
 import { useTransformerSync } from "../hooks/use-transformer-sync";
 import { useCanvasZoomPan } from "../hooks/use-canvas-zoom-pan";
 import { useCanvasHotkeys } from "../hooks/use-canvas-hotkeys";
+import { Html } from "react-konva-utils";
 
 type PointerPosition = { x: number; y: number };
 
@@ -422,6 +425,107 @@ function ArrowNode({
   );
 }
 
+const HtmlContent = React.memo(
+  ({ html }: { html: string }) => {
+    return (
+      <iframe
+        srcDoc={html}
+        style={{
+          width: "100%",
+          height: "100%",
+          border: "none",
+          display: "block",
+        }}
+      />
+    );
+  },
+  (prev, next) => prev.html === next.html
+);
+
+HtmlContent.displayName = "HtmlContent";
+
+function HtmlNode({
+  block,
+  onClick,
+  onDragStart,
+  onDragEnd,
+  onHover,
+  draggable,
+  isSelecting,
+}: {
+  block: IEditorBlockHtml;
+  onClick: (event: KonvaEventObject<MouseEvent | TouchEvent>) => void;
+  onDragStart: (event: KonvaEventObject<DragEvent>) => void;
+  onDragEnd: (position: { x: number; y: number }) => void;
+  onHover: (hovering: boolean) => void;
+  draggable: boolean;
+  isSelecting: boolean;
+}) {
+  const { scaleX, scaleY } = getScaleWithFlip(block);
+  const fillProps = mapFillProps(block);
+  const shadowProps = getShadowProps(block);
+
+  const htmlDivProps = React.useMemo(
+    () => ({
+      style: {
+        width: `${block.width}px`,
+        height: `${block.height}px`,
+        padding: "8px",
+        boxSizing: "border-box" as const,
+        overflow: "visible" as const,
+        pointerEvents: isSelecting ? ("none" as const) : ("auto" as const),
+      },
+    }),
+    [block.width, block.height, isSelecting]
+  );
+
+  const htmlGroupProps = React.useMemo(() => ({ x: 0, y: 0 }), []);
+
+  return (
+    <Group
+      id={blockNodeId(block.id)}
+      name="canvas-node"
+      x={block.x}
+      y={block.y}
+      width={block.width}
+      height={block.height}
+      rotation={block.rotation ?? 0}
+      scaleX={scaleX}
+      scaleY={scaleY}
+      opacity={getOpacity(block.opacity)}
+      visible={isBlockVisible(block)}
+      draggable={draggable}
+      onClick={onClick}
+      onTap={onClick}
+      onMouseEnter={() => onHover(true)}
+      onMouseLeave={() => onHover(false)}
+      onDragStart={onDragStart}
+      onDragEnd={(event) => {
+        const node = event.target;
+        onDragEnd({ x: node.x(), y: node.y() });
+      }}
+      listening
+    >
+      <Rect
+        x={0}
+        y={0}
+        width={block.width}
+        height={block.height}
+        cornerRadius={getCornerRadius(block)}
+        stroke={block.border?.color}
+        strokeWidth={block.border?.width}
+        dash={block.border?.dash}
+        {...fillProps}
+        {...shadowProps}
+        perfectDrawEnabled={false}
+      />
+      <Html key={block.id} groupProps={htmlGroupProps} divProps={htmlDivProps}>
+        <HtmlContent html={block.html} />
+      </Html>
+    </Group>
+  );
+}
+
 // Helper to get outline bounds for any block type - ensures consistency
 const getBlockOutlineBounds = (block: IEditorBlocks) => {
   if (block.type === "arrow") {
@@ -500,13 +604,14 @@ function SelectionOutline({
 const DEFAULT_BLOCK_SIZES = {
   text: { width: 320, height: 52 },
   frame: { width: 240, height: 240 },
+  html: { width: 240, height: 240 },
   arrow: { width: 200, height: 0 }, // Arrow uses points, not width/height
 } as const;
 
 const calculateBlockPlacement = (
   start: PointerPosition,
   current: PointerPosition | null,
-  blockType: "text" | "frame" | "image",
+  blockType: "text" | "frame" | "image" | "html",
   isDrag: boolean,
   pendingImageData?: { url: string; width: number; height: number } | null
 ) => {
@@ -545,6 +650,9 @@ const calculateBlockPlacement = (
     } else if (blockType === "frame") {
       width = DEFAULT_BLOCK_SIZES.frame.width;
       height = DEFAULT_BLOCK_SIZES.frame.height;
+    } else if (blockType === "html") {
+      width = DEFAULT_BLOCK_SIZES.html.width;
+      height = DEFAULT_BLOCK_SIZES.html.height;
     } else if (blockType === "image" && pendingImageData) {
       const scale = Math.min(
         1,
@@ -627,7 +735,7 @@ function PlacementPreview({
   zoom,
   pendingImageData,
 }: {
-  mode: "text" | "frame" | "arrow" | "image";
+  mode: "text" | "frame" | "arrow" | "image" | "html";
   start: PointerPosition;
   current: PointerPosition | null;
   zoom: number;
@@ -670,7 +778,7 @@ function PlacementPreview({
   const placement = calculateBlockPlacement(
     start,
     current,
-    mode as "text" | "frame" | "image",
+    mode as "text" | "frame" | "image" | "html",
     isDrag,
     pendingImageData
   );
@@ -679,8 +787,9 @@ function PlacementPreview({
     return null;
   }
 
-  const fillProps = mode === "frame" ? { fill: "#ffffff" } : {};
-  const strokeColor = mode === "frame" ? "#d1d5db" : "#6366f1";
+  const isFrameOrHtml = mode === "frame" || mode === "html";
+  const fillProps = isFrameOrHtml ? { fill: "#ffffff" } : {};
+  const strokeColor = isFrameOrHtml ? "#d1d5db" : "#6366f1";
 
   return (
     <Rect
@@ -691,8 +800,8 @@ function PlacementPreview({
       stroke={strokeColor}
       strokeWidth={1 / zoom}
       dash={[4 / zoom, 4 / zoom]}
-      fill={mode === "frame" ? "#ffffff80" : "transparent"}
-      cornerRadius={mode === "frame" ? 16 : 0}
+      fill={isFrameOrHtml ? "#ffffff80" : "transparent"}
+      cornerRadius={isFrameOrHtml ? 16 : 0}
       listening={false}
       opacity={0.5}
       {...fillProps}
@@ -799,7 +908,8 @@ function EditorCanvas() {
       mode === "text" ||
       mode === "frame" ||
       mode === "arrow" ||
-      mode === "image"
+      mode === "image" ||
+      mode === "html"
     );
   }, [mode]);
 
@@ -951,6 +1061,77 @@ function EditorCanvas() {
         storeApi.getState().addBlock(defaultBlock);
         setPendingImageData(null);
         storeApi.getState().setPendingImageData(null);
+        setMode("select");
+      } else if (blockType === "html") {
+        // Use shared calculation for consistency
+        const isDrag = !!size;
+        const placement = calculateBlockPlacement(
+          position,
+          endPosition || position,
+          "html",
+          isDrag
+        );
+        if (!placement) return;
+
+        const defaultBlock = ensureBlockDefaults(
+          htmlBlockSchema.parse({
+            id: generateId(),
+            type: "html",
+            label: `HTML ${blocks.length + 1}`,
+            x: placement.x,
+            y: placement.y,
+            width: placement.width,
+            height: placement.height,
+            rotation: 0,
+            scaleX: 1,
+            scaleY: 1,
+            html: `<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      margin: 0;
+      padding: 8px;
+      font-size: 14px;
+      font-family: system-ui, sans-serif;
+      color: #1f2937;
+    }
+    input {
+      display: block;
+      width: 100%;
+      padding: 4px 8px;
+      margin-top: 8px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: system-ui, sans-serif;
+      background-color: white;
+      color: #1f2937;
+      box-sizing: border-box;
+    }
+    input:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+    }
+  </style>
+</head>
+<body>
+  <div>hello world</div>
+  <input />
+</body>
+</html>`,
+            background: "#ffffff",
+            border: {
+              color: "#d1d5db",
+              width: 1,
+            },
+            radius: { tl: 16, tr: 16, br: 16, bl: 16 },
+            visible: true,
+            opacity: 100,
+          } satisfies IEditorBlockHtml)
+        );
+        storeApi.getState().addBlock(defaultBlock);
         setMode("select");
       }
     },
@@ -1605,6 +1786,16 @@ function EditorCanvas() {
                   {...dragHandlers}
                 />
               );
+            } else if (block.type === "html") {
+              content = (
+                <HtmlNode
+                  key={block.id}
+                  block={block as IEditorBlockHtml}
+                  onClick={handleBlockClick}
+                  {...dragHandlers}
+                  isSelecting={isSelecting}
+                />
+              );
             }
 
             if (!content) {
@@ -1639,7 +1830,7 @@ function EditorCanvas() {
           placementHasMoved &&
           isPlacementMode() ? (
             <PlacementPreview
-              mode={mode as "text" | "frame" | "arrow" | "image"}
+              mode={mode as "text" | "frame" | "arrow" | "image" | "html"}
               start={placementStart}
               current={placementCurrent}
               zoom={zoom}

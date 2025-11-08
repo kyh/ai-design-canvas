@@ -2,7 +2,7 @@ import * as React from 'react';
 import { editorStoreApi } from '../use-editor';
 
 interface UseCanvasHotkeysOptions {
-  setMode: (mode: 'move' | 'select' | 'text' | 'frame' | 'arrow' | 'image') => void;
+  setMode: (mode: 'move' | 'select' | 'text' | 'frame' | 'arrow' | 'image' | 'html') => void;
   deleteSelectedBlocks: () => void;
 }
 
@@ -22,7 +22,7 @@ const isEditableTarget = (target: EventTarget | null) => {
 
 export const useCanvasHotkeys = ({ setMode, deleteSelectedBlocks }: UseCanvasHotkeysOptions) => {
   const spacePressedRef = React.useRef(false);
-  const spacePrevModeRef = React.useRef<'move' | 'select' | 'text' | 'frame' | 'arrow' | 'image' | null>(null);
+  const spacePrevModeRef = React.useRef<'move' | 'select' | 'text' | 'frame' | 'arrow' | 'image' | 'html' | null>(null);
 
   React.useEffect(() => {
     const store = editorStoreApi;
@@ -99,6 +99,12 @@ export const useCanvasHotkeys = ({ setMode, deleteSelectedBlocks }: UseCanvasHot
 
       if (key === 'a') {
         setMode('arrow');
+        event.preventDefault();
+        return;
+      }
+
+      if (key === 'h') {
+        setMode('html');
         event.preventDefault();
         return;
       }
