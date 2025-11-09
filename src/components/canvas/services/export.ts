@@ -22,9 +22,15 @@ const EXPORT_PADDING = 20;
 const DEG_TO_RAD = Math.PI / 180;
 
 /**
- * Default pixel ratio for high-DPI displays
+ * Gets the default pixel ratio for high-DPI displays
+ * Safe for SSR - returns 1 if window is not available
  */
-const DEFAULT_PIXEL_RATIO = window.devicePixelRatio || 1;
+const getDefaultPixelRatio = (): number => {
+  if (typeof window === "undefined") {
+    return 1;
+  }
+  return window.devicePixelRatio || 1;
+};
 
 /**
  * Bounding box type for export calculations
@@ -167,7 +173,9 @@ function calculateVisibleNodesBounds(
 ): Bounds | null {
   const selectedNodes = selectedIds
     .map((id) => stage.findOne(`#${blockNodeId(id)}`))
-    .filter((node): node is Konva.Node => Boolean(node) && node.visible());
+    .filter((node): node is Konva.Node => {
+      return node != null && node.visible();
+    });
 
   if (selectedNodes.length === 0) {
     return null;
@@ -354,7 +362,7 @@ export const captureSelectedBlocksAsImage = async (
     if (bounds) {
       // Export only the selected region
       return stage.toDataURL({
-        pixelRatio: DEFAULT_PIXEL_RATIO,
+        pixelRatio: getDefaultPixelRatio(),
         x: bounds.x,
         y: bounds.y,
         width: bounds.width,
@@ -363,7 +371,7 @@ export const captureSelectedBlocksAsImage = async (
     }
 
     // Export entire canvas
-    return stage.toDataURL({ pixelRatio: DEFAULT_PIXEL_RATIO });
+    return stage.toDataURL({ pixelRatio: getDefaultPixelRatio() });
   } finally {
     // Restore visibility
     if (restoreVisibility) {

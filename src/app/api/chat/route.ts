@@ -1,10 +1,13 @@
 import { streamChatResponse } from "@/ai/response/stream-chat-response";
 
-import type { ChatUIMessage } from "@/ai/messages/types";
+import type {
+  GenerateModeChatUIMessage,
+  BuildModeChatUIMessage,
+} from "@/ai/messages/types";
 import type { SelectionBounds } from "@/lib/types";
 
 type BodyData = {
-  messages: ChatUIMessage[];
+  messages: GenerateModeChatUIMessage[] | BuildModeChatUIMessage[];
   openaiApiKey?: string;
   mode?: "generate" | "build";
   selectionBounds?: SelectionBounds;

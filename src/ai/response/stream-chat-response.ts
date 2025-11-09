@@ -6,7 +6,10 @@ import {
   streamText,
 } from "ai";
 
-import type { ChatUIMessage } from "../messages/types";
+import type {
+  BuildModeChatUIMessage,
+  GenerateModeChatUIMessage,
+} from "../messages/types";
 import type { DataPart } from "../messages/data-parts";
 import type { SelectionBounds } from "@/lib/types";
 import { generateTools } from "../tools";
@@ -23,7 +26,7 @@ type ExecuteParams = {
 const executeGenerateMode = ({
   writer,
   messages,
-}: ExecuteParams & { messages: ChatUIMessage[] }) => {
+}: ExecuteParams & { messages: GenerateModeChatUIMessage[] }) => {
   const tools = generateTools({ writer });
 
   const result = streamText({
@@ -51,7 +54,7 @@ const executeBuildMode = ({
   messages,
   selectionBounds,
 }: ExecuteParams & {
-  messages: ChatUIMessage[];
+  messages: BuildModeChatUIMessage[];
   selectionBounds?: SelectionBounds;
 }) => {
   // Create loading block immediately
@@ -113,7 +116,7 @@ const executeBuildMode = ({
 };
 
 export const streamChatResponse = (
-  messages: ChatUIMessage[],
+  messages: BuildModeChatUIMessage[] | GenerateModeChatUIMessage[],
   openaiApiKey?: string,
   mode: "generate" | "build" = "generate",
   selectionBounds?: SelectionBounds
@@ -124,11 +127,18 @@ export const streamChatResponse = (
       execute: ({ writer }) => {
         switch (mode) {
           case "build":
-            executeBuildMode({ writer, messages, selectionBounds });
+            executeBuildMode({
+              writer,
+              messages: messages as BuildModeChatUIMessage[],
+              selectionBounds,
+            });
             break;
           case "generate":
           default:
-            executeGenerateMode({ writer, messages });
+            executeGenerateMode({
+              writer,
+              messages: messages as GenerateModeChatUIMessage[],
+            });
             break;
         }
       },

@@ -5,7 +5,10 @@ import { useChat } from "@ai-sdk/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { blockSchema } from "@/lib/schema";
-import type { ChatUIMessage } from "@/ai/messages/types";
+import type {
+  BuildModeChatUIMessage,
+  GenerateModeChatUIMessage,
+} from "@/ai/messages/types";
 import type { DataPart } from "@/ai/messages/data-parts";
 import { Button } from "./ui/button";
 import { Loader2, Send } from "lucide-react";
@@ -35,7 +38,9 @@ export default function AIPrompt() {
   const blocks = useOrderedBlocks();
   const selectedIds = useEditorStore((state) => state.selectedIds);
 
-  const { sendMessage, status } = useChat<ChatUIMessage>({
+  const { sendMessage, status } = useChat<
+    BuildModeChatUIMessage | GenerateModeChatUIMessage
+  >({
     id: apiKey,
     transport: apiKey === "demo" ? transport : undefined,
     onError: (error) => {

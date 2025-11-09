@@ -1,7 +1,16 @@
 import type { UIMessage } from "ai";
 
-import type { ToolSet } from "../tools";
+import type { BuildToolSet, GenerateToolSet } from "../tools";
 import type { DataPart } from "./data-parts";
 import type { Metadata } from "./metadata";
 
-export type ChatUIMessage = UIMessage<Metadata, DataPart, ToolSet>;
+export type BuildModeChatUIMessage = UIMessage<
+  Metadata,
+  DataPart,
+  BuildToolSet
+>;
+export type GenerateModeChatUIMessage = UIMessage<
+  Metadata,
+  DataPart,
+  GenerateToolSet
+>;
