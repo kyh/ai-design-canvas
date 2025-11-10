@@ -5,6 +5,7 @@ import {
   stepCountIs,
   streamText,
 } from "ai";
+import { createOpenAI } from "@ai-sdk/openai";
 
 import type {
   BuildModeChatUIMessage,
@@ -26,11 +27,23 @@ type ExecuteParams = {
 const executeGenerateMode = ({
   writer,
   messages,
-}: ExecuteParams & { messages: GenerateModeChatUIMessage[] }) => {
+  openaiApiKey,
+}: ExecuteParams & {
+  messages: GenerateModeChatUIMessage[];
+  openaiApiKey?: string;
+}) => {
+  if (!openaiApiKey) {
+    throw new Error("OpenAI API key is required");
+  }
+
+  const openai = createOpenAI({
+    apiKey: openaiApiKey,
+  });
+
   const tools = generateTools({ writer });
 
   const result = streamText({
-    model: "xai/grok-4-fast-non-reasoning",
+    model: openai("gpt-5-mini"),
     system: generatePrompt,
     messages: convertToModelMessages(messages),
     stopWhen: stepCountIs(5),
@@ -53,10 +66,20 @@ const executeBuildMode = ({
   writer,
   messages,
   selectionBounds,
+  openaiApiKey,
 }: ExecuteParams & {
   messages: BuildModeChatUIMessage[];
   selectionBounds?: SelectionBounds;
+  openaiApiKey?: string;
 }) => {
+  if (!openaiApiKey) {
+    throw new Error("OpenAI API key is required");
+  }
+
+  const openai = createOpenAI({
+    apiKey: openaiApiKey,
+  });
+
   // Create loading block immediately
   const loadingBlock = createLoadingBlock(selectionBounds);
   const blockId = loadingBlock.id;
@@ -74,7 +97,7 @@ const executeBuildMode = ({
 
   // Generate HTML as text
   const result = streamText({
-    model: "xai/grok-4-fast-non-reasoning",
+    model: openai("gpt-5-mini"),
     system: buildPrompt,
     messages: convertToModelMessages(messages),
     onFinish: async ({ text }) => {
@@ -131,6 +154,7 @@ export const streamChatResponse = (
               writer,
               messages: messages as BuildModeChatUIMessage[],
               selectionBounds,
+              openaiApiKey,
             });
             break;
           case "generate":
@@ -138,6 +162,7 @@ export const streamChatResponse = (
             executeGenerateMode({
               writer,
               messages: messages as GenerateModeChatUIMessage[],
+              openaiApiKey,
             });
             break;
         }
