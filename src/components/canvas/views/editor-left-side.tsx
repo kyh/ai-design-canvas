@@ -30,6 +30,8 @@ import { useEditorStore } from "../use-editor";
 import { useShallow } from "zustand/react/shallow";
 import { useOrderedBlocks } from "../hooks/use-ordered-blocks";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { GitHubLogoIcon } from "@radix-ui/react-icons";
 
 interface BlockItemProps extends React.HTMLAttributes<HTMLDivElement> {
   block: IEditorBlocks;
@@ -291,7 +293,14 @@ function EditorLeftSide() {
         ))}
       </ScrollArea>
       <div className="border-t border-border p-2 flex items-center justify-between gap-2">
-        <div />
+        <div>
+          <Button variant="outline" size="icon" asChild>
+            <Link href="https://github.com/kyh/ai-design-canvas">
+              <span className="sr-only">GitHub</span>
+              <GitHubLogoIcon className="size-5" />
+            </Link>
+          </Button>
+        </div>
         <div className="flex items-center gap-2">
           <ModeToggle />
           <Button
