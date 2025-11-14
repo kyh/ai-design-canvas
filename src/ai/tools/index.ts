@@ -7,13 +7,14 @@ import { generateTextBlock } from "./generate-text-block";
 
 type WriterParams = {
   writer: UIMessageStreamWriter<UIMessage<never, DataPart>>;
+  openaiApiKey?: string;
 };
 
-export function generateTools({ writer }: WriterParams) {
+export function generateTools({ writer, openaiApiKey }: WriterParams) {
   return {
     generateTextBlock: generateTextBlock({ writer }),
     generateFrameBlock: generateFrameBlock({ writer }),
-    generateImageBlock: generateImageBlock({ writer }),
+    generateImageBlock: generateImageBlock({ writer, openaiApiKey }),
   };
 }
 

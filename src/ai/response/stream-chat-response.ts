@@ -49,7 +49,7 @@ const executeGenerateMode = ({
     messages: convertToModelMessages(messages),
     stopWhen: stepCountIs(5),
     toolChoice: "required",
-    tools: generateTools({ writer }),
+    tools: generateTools({ writer, openaiApiKey }),
     onError: () => {
       // Error handling is done via toast notifications in the UI
     },

@@ -112,6 +112,7 @@ export const frameBlockSchema = blockBaseSchema.extend({
 export const imageBlockSchema = blockBaseSchema.extend({
   type: z.literal("image"),
   url: z.string(),
+  prompt: z.string().optional(), // Prompt for AI image generation
   fit: z
     .enum(["contain", "cover", "fill", "fitWidth", "fitHeight"])
     .default("contain")
