@@ -2,7 +2,7 @@
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fkyh%2Fai-design-canvas)
 
-A powerful, forkable canvas template for building your own design tools like Canva, Figma, or tldraw. This Next.js-based template provides a complete foundation for creating interactive canvas applications with AI-powered design generation.
+This Next.js-based template provides the foundation for creating an interactive canvas application with AI-powered design generation and prototype generation. Build your own Canva, Figma, or tldraw alternative.
 
 ## 🎨 Features
 
@@ -43,7 +43,7 @@ A powerful, forkable canvas template for building your own design tools like Can
 1. **Fork or clone this repository**
 
 ```bash
-git clone https://github.com/your-username/ai-design-canvas.git
+git clone https://github.com/kyh/ai-design-canvas.git
 cd ai-design-canvas
 ```
 
@@ -53,21 +53,13 @@ cd ai-design-canvas
 pnpm install
 ```
 
-3. **Set up environment variables**
-
-Create a `.env.local` file in the root directory:
-
-```env
-OPENAI_API_KEY=your_openai_api_key_here
-```
-
-4. **Run the development server**
+3. **Run the development server**
 
 ```bash
 pnpm dev
 ```
 
-5. **Open your browser**
+4. **Open your browser**
 
 Navigate to [http://localhost:3000](http://localhost:3000) to see the canvas editor.
 
@@ -138,10 +130,6 @@ This template is perfect for building:
 - **Tailwind CSS** - Utility-first styling
 - **TypeScript** - Type safety
 - **Vercel AI SDK** - AI integration
-
-## 📝 License
-
-This template is open source and available for you to fork and customize for your own projects.
 
 ## 🤝 Contributing
 
