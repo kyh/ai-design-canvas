@@ -3,13 +3,15 @@
 import * as React from "react";
 import { CursorArrowIcon, HandIcon } from "@radix-ui/react-icons";
 import {
+  ArrowLeftRight,
+  ClipboardCopy,
   Download,
-  Undo,
-  Redo,
+  ImageDown,
   Loader2,
   PenTool,
+  Redo,
   Sparkles,
-  ArrowLeftRight,
+  Undo,
 } from "lucide-react";
 import { useChat } from "@ai-sdk/react";
 import { toast } from "sonner";
@@ -46,6 +48,12 @@ import {
   InputGroupTextarea,
   InputGroupAddon,
 } from "@/components/ui/input-group";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 function EditorBottomToolbar() {
   const [toolbarMode, setToolbarMode] = React.useState<"design" | "ai">(
@@ -72,6 +80,9 @@ function EditorBottomToolbar() {
   const stage = useEditorStore((state) => state.stage);
   const blocks = useOrderedBlocks();
   const selectedIds = useEditorStore((state) => state.selectedIds);
+  const [canvasSize, canvasBackground] = useEditorStore(
+    useShallow((state) => [state.canvas.size, state.canvas.background])
+  );
 
   // AI Prompt state
   const [input, setInput] = React.useState("");
@@ -140,6 +151,34 @@ function EditorBottomToolbar() {
   });
 
   const isLoading = status === "submitted" || status === "streaming";
+  const handleCopyJson = React.useCallback(async () => {
+    const serialized = JSON.stringify(
+      {
+        blocks,
+        size: canvasSize,
+        background: canvasBackground,
+      },
+      null,
+      2
+    );
+
+    if (
+      typeof navigator === "undefined" ||
+      !navigator.clipboard ||
+      typeof navigator.clipboard.writeText !== "function"
+    ) {
+      toast.error("Clipboard is not available in this environment.");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(serialized);
+      toast.success("Canvas JSON copied to clipboard.");
+    } catch (error) {
+      console.error("Failed to copy canvas JSON", error);
+      toast.error("Failed to copy JSON to clipboard.");
+    }
+  }, [blocks, canvasBackground, canvasSize]);
 
   const handleSubmit = React.useCallback(
     async (e: React.FormEvent, overrideMode?: "generate" | "build") => {
@@ -375,11 +414,33 @@ function EditorBottomToolbar() {
                     </Button>
                   </CustomTooltip>
                   <Separator orientation="vertical" className="h-7! my-auto" />
-                  <CustomTooltip content="Export">
-                    <Button size="icon" variant="ghost" onClick={downloadImage}>
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </CustomTooltip>
+                  <DropdownMenu>
+                    <CustomTooltip content="Export">
+                      <DropdownMenuTrigger asChild>
+                        <Button size="icon" variant="ghost">
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                    </CustomTooltip>
+                    <DropdownMenuContent align="end" className="w-44">
+                      <DropdownMenuItem
+                        onClick={() => {
+                          void downloadImage();
+                        }}
+                      >
+                        <ImageDown className="mr-2 h-4 w-4" />
+                        Export as image
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          void handleCopyJson();
+                        }}
+                      >
+                        <ClipboardCopy className="mr-2 h-4 w-4" />
+                        Copy as JSON
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </TabsContent>
 

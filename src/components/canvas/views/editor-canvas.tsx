@@ -147,7 +147,7 @@ const mapFillProps = (block: IEditorBlocks) => {
   if (!fill) {
     return {};
   }
-  if (!fill.includes("gradient")) {
+  if (!fill.toLowerCase().includes("gradient")) {
     return { fill };
   }
   return parseLinearGradientFill(fill, block.width, block.height);
@@ -1731,7 +1731,9 @@ function EditorCanvas() {
             y={0}
             width={size.width}
             height={size.height}
-            fill={background ?? "#ffffff"}
+            {...(background && background.toLowerCase().includes("gradient")
+              ? parseLinearGradientFill(background, size.width, size.height)
+              : { fill: background ?? "#ffffff" })}
             stroke="#d4d4d8"
             strokeWidth={1}
           />
