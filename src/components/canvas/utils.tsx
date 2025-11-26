@@ -3,6 +3,7 @@ import {
   ImageIcon,
   TextIcon,
   ArrowRightIcon,
+  Pencil1Icon,
 } from "@radix-ui/react-icons";
 import { Code as CodeIcon } from "lucide-react";
 import type { IEditorBlockType } from "@/lib/schema";
@@ -19,6 +20,8 @@ export function BlockIcon(type: IEditorBlockType) {
       return <ArrowRightIcon />;
     case "html":
       return <CodeIcon />;
+    case "draw":
+      return <Pencil1Icon />;
     default:
       return <BoxIcon />;
   }

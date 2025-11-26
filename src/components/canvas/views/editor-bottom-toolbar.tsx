@@ -392,6 +392,16 @@ function EditorBottomToolbar() {
                       {BlockIcon("arrow")}
                     </Button>
                   </CustomTooltip>
+                  <CustomTooltip content="Draw" hotkey="D">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setMode("draw")}
+                      className={cn(mode === "draw" && "bg-muted")}
+                    >
+                      {BlockIcon("draw")}
+                    </Button>
+                  </CustomTooltip>
                   <Separator orientation="vertical" className="h-7! my-auto" />
                   <CustomTooltip content="Undo" hotkey="⌘Z">
                     <Button

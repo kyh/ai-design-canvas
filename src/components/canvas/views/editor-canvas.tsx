@@ -8,6 +8,7 @@ import {
   Group,
   Image as KonvaImage,
   Arrow as KonvaArrow,
+  Line as KonvaLine,
   Transformer,
 } from "react-konva";
 import type { KonvaEventObject } from "konva/lib/Node";
@@ -17,6 +18,7 @@ import type {
   IEditorBlockText,
   IEditorBlockArrow,
   IEditorBlockHtml,
+  IEditorBlockDraw,
   IEditorBlocks,
 } from "@/lib/schema";
 import {
@@ -24,6 +26,7 @@ import {
   frameBlockSchema,
   imageBlockSchema,
   arrowBlockSchema,
+  drawBlockSchema,
 } from "@/lib/schema";
 import { generateId } from "@/lib/id-generator";
 import ZoomHandler from "./zoomable";
@@ -538,6 +541,58 @@ function HtmlNode({
   );
 }
 
+function DrawNode({
+  block,
+  onClick,
+  onDragStart,
+  onDragEnd,
+  onHover,
+  draggable,
+}: {
+  block: IEditorBlockDraw;
+  onClick: (event: KonvaEventObject<MouseEvent | TouchEvent>) => void;
+  onDragStart: (event: KonvaEventObject<DragEvent>) => void;
+  onDragEnd: (position: { x: number; y: number }) => void;
+  onHover: (hovering: boolean) => void;
+  draggable: boolean;
+}) {
+  const { scaleX, scaleY } = getScaleWithFlip(block);
+  const shadowProps = getShadowProps(block);
+
+  return (
+    <KonvaLine
+      id={blockNodeId(block.id)}
+      name="canvas-node"
+      x={block.x}
+      y={block.y}
+      points={block.points}
+      stroke={block.stroke ?? "#000000"}
+      strokeWidth={block.strokeWidth ?? 3}
+      tension={block.tension ?? 0.5}
+      lineCap={block.lineCap ?? "round"}
+      lineJoin={block.lineJoin ?? "round"}
+      rotation={block.rotation ?? 0}
+      opacity={getOpacity(block.opacity)}
+      scaleX={scaleX}
+      scaleY={scaleY}
+      visible={isBlockVisible(block)}
+      draggable={draggable}
+      onClick={onClick}
+      onTap={onClick}
+      onMouseEnter={() => onHover(true)}
+      onMouseLeave={() => onHover(false)}
+      onDragStart={onDragStart}
+      onDragEnd={(event) => {
+        const node = event.target;
+        onDragEnd({ x: node.x(), y: node.y() });
+      }}
+      listening
+      {...shadowProps}
+      perfectDrawEnabled={false}
+    />
+  );
+}
+
 // Helper to get outline bounds for any block type - ensures consistency
 const getBlockOutlineBounds = (block: IEditorBlocks) => {
   if (block.type === "arrow") {
@@ -580,7 +635,7 @@ function HoverOutline({ block, zoom }: { block: IEditorBlocks; zoom: number }) {
       dash={[6 / zoom, 6 / zoom]}
       strokeWidth={1 / zoom}
       listening={false}
-      cornerRadius={block.type === "arrow" ? 0 : getCornerRadius(block)}
+      cornerRadius={block.type === "arrow" || block.type === "draw" ? 0 : getCornerRadius(block)}
       opacity={0.8}
     />
   );
@@ -857,6 +912,9 @@ function EditorCanvas() {
     width: number;
     height: number;
   } | null>(null);
+  const [isDrawing, setIsDrawing] = React.useState(false);
+  const [drawPoints, setDrawPoints] = React.useState<number[]>([]);
+  const [drawStartPos, setDrawStartPos] = React.useState<PointerPosition | null>(null);
 
   const {
     blocks,
@@ -937,6 +995,7 @@ function EditorCanvas() {
 
   const isSelectMode = mode === "select";
   const isMoveMode = mode === "move";
+  const isDrawMode = mode === "draw";
 
   const createBlockAtPosition = React.useCallback(
     (
@@ -1200,6 +1259,15 @@ function EditorCanvas() {
         return;
       }
 
+      // Handle draw mode
+      if (isDrawMode) {
+        const canvasPoint = toCanvasCoordinates(stage, pointer, zoom);
+        setIsDrawing(true);
+        setDrawStartPos(canvasPoint);
+        setDrawPoints([0, 0]); // Start with origin point (relative to start position)
+        return;
+      }
+
       // Handle placement mode - allow placement even on top of existing blocks
       if (isPlacementMode()) {
         handlePlacementMouseDown(stage, pointer);
@@ -1222,14 +1290,29 @@ function EditorCanvas() {
       isMoveMode,
       isPlacementMode,
       isSelectMode,
+      isDrawMode,
       handlePlacementMouseDown,
       handleSelectionMouseDown,
+      zoom,
     ]
   );
 
   const handleStageMouseMove = React.useCallback(() => {
     const stage = stageRef.current;
     if (!stage) {
+      return;
+    }
+
+    // Handle drawing
+    if (isDrawing && drawStartPos) {
+      const pointer = getPointerPosition(stage);
+      if (pointer) {
+        const canvasPoint = toCanvasCoordinates(stage, pointer, zoom);
+        // Points are relative to the start position
+        const relativeX = canvasPoint.x - drawStartPos.x;
+        const relativeY = canvasPoint.y - drawStartPos.y;
+        setDrawPoints((prev) => [...prev, relativeX, relativeY]);
+      }
       return;
     }
 
@@ -1270,9 +1353,61 @@ function EditorCanvas() {
       )
       .map((block) => block.id);
     setPreviewSelectionIds(previewIds);
-  }, [blocks, isSelecting, zoom, isPlacingBlock, placementStart]);
+  }, [blocks, isSelecting, zoom, isPlacingBlock, placementStart, isDrawing, drawStartPos]);
 
   const handleStageMouseUp = React.useCallback(() => {
+    // Handle draw completion
+    if (isDrawing && drawStartPos && drawPoints.length >= 4) {
+      // Calculate bounding box of all points
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (let i = 0; i < drawPoints.length; i += 2) {
+        minX = Math.min(minX, drawPoints[i]);
+        maxX = Math.max(maxX, drawPoints[i]);
+        minY = Math.min(minY, drawPoints[i + 1]);
+        maxY = Math.max(maxY, drawPoints[i + 1]);
+      }
+      const width = Math.max(1, maxX - minX);
+      const height = Math.max(1, maxY - minY);
+
+      const existingBlocks = selectOrderedBlocks(storeApi.getState());
+      const defaultBlock = ensureBlockDefaults(
+        drawBlockSchema.parse({
+          id: generateId(),
+          type: "draw",
+          label: `Draw ${existingBlocks.length + 1}`,
+          x: drawStartPos.x,
+          y: drawStartPos.y,
+          width,
+          height,
+          rotation: 0,
+          scaleX: 1,
+          scaleY: 1,
+          points: drawPoints,
+          stroke: "#000000",
+          strokeWidth: 3,
+          tension: 0.5,
+          lineCap: "round",
+          lineJoin: "round",
+          visible: true,
+          opacity: 100,
+        } satisfies IEditorBlockDraw)
+      );
+      storeApi.getState().addBlock(defaultBlock);
+
+      setIsDrawing(false);
+      setDrawPoints([]);
+      setDrawStartPos(null);
+      return;
+    }
+
+    // Reset drawing state if no valid drawing
+    if (isDrawing) {
+      setIsDrawing(false);
+      setDrawPoints([]);
+      setDrawStartPos(null);
+      return;
+    }
+
     // Handle placement completion
     if (isPlacingBlock && placementStart) {
       if (placementCurrent) {
@@ -1345,6 +1480,10 @@ function EditorCanvas() {
     placementCurrent,
     mode,
     createBlockAtPosition,
+    isDrawing,
+    drawStartPos,
+    drawPoints,
+    storeApi,
   ]);
 
   const handleStageClick = React.useCallback(
@@ -1722,6 +1861,8 @@ function EditorCanvas() {
               : isStageDragging
               ? "grabbing"
               : "grab"
+            : isDrawMode
+            ? "crosshair"
             : "default",
         }}
       >
@@ -1875,6 +2016,15 @@ function EditorCanvas() {
                   isSelecting={isSelecting}
                 />
               );
+            } else if (block.type === "draw") {
+              content = (
+                <DrawNode
+                  key={block.id}
+                  block={block as IEditorBlockDraw}
+                  onClick={handleBlockClick}
+                  {...dragHandlers}
+                />
+              );
             }
 
             if (!content) {
@@ -1914,6 +2064,19 @@ function EditorCanvas() {
               current={placementCurrent}
               zoom={zoom}
               pendingImageData={pendingImageData}
+            />
+          ) : null}
+          {isDrawing && drawStartPos && drawPoints.length >= 2 ? (
+            <KonvaLine
+              x={drawStartPos.x}
+              y={drawStartPos.y}
+              points={drawPoints}
+              stroke="#000000"
+              strokeWidth={3}
+              tension={0.5}
+              lineCap="round"
+              lineJoin="round"
+              listening={false}
             />
           ) : null}
         </Layer>
