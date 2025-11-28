@@ -4,7 +4,14 @@ import type Konva from "konva";
 
 interface UseCanvasHotkeysOptions {
   setMode: (
-    mode: "move" | "select" | "text" | "frame" | "arrow" | "image"
+    mode:
+      | "move"
+      | "select"
+      | "text"
+      | "frame"
+      | "arrow"
+      | "image"
+      | "draw"
   ) => void;
   deleteSelectedBlocks: () => void;
   copySelectedBlocks: () => void;
@@ -62,7 +69,14 @@ export const useCanvasHotkeys = ({
 }: UseCanvasHotkeysOptions) => {
   const spacePressedRef = React.useRef(false);
   const spacePrevModeRef = React.useRef<
-    "move" | "select" | "text" | "frame" | "arrow" | "image" | null
+    | "move"
+    | "select"
+    | "text"
+    | "frame"
+    | "arrow"
+    | "image"
+    | "draw"
+    | null
   >(null);
 
   React.useEffect(() => {
@@ -171,6 +185,12 @@ export const useCanvasHotkeys = ({
 
       if (key === "a") {
         setMode("arrow");
+        event.preventDefault();
+        return;
+      }
+
+      if (key === "d") {
+        setMode("draw");
         event.preventDefault();
         return;
       }

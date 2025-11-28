@@ -37,7 +37,7 @@ type HistoryEntry = Pick<Template, "blocks" | "size" | "background">;
 interface EditorCanvasState {
   size: IEditorSize;
   background?: string;
-  mode: "move" | "select" | "text" | "frame" | "arrow" | "image";
+  mode: "move" | "select" | "text" | "frame" | "arrow" | "image" | "draw";
   isTextEditing: boolean;
   zoom: number;
   stagePosition: { x: number; y: number };
@@ -64,7 +64,14 @@ interface EditorActions {
   setStage: (stage: Konva.Stage | null) => void;
   setSelectedIds: (ids: string[]) => void;
   setMode: (
-    mode: "move" | "select" | "text" | "frame" | "arrow" | "image"
+    mode:
+      | "move"
+      | "select"
+      | "text"
+      | "frame"
+      | "arrow"
+      | "image"
+      | "draw"
   ) => void;
   setIsTextEditing: (value: boolean) => void;
   setStageZoom: (zoom: number) => void;

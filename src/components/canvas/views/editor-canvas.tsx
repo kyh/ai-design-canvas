@@ -8,6 +8,7 @@ import {
   Group,
   Image as KonvaImage,
   Arrow as KonvaArrow,
+  Line as KonvaLine,
   Transformer,
 } from "react-konva";
 import type { KonvaEventObject } from "konva/lib/Node";
@@ -17,6 +18,7 @@ import type {
   IEditorBlockText,
   IEditorBlockArrow,
   IEditorBlockHtml,
+  IEditorBlockDraw,
   IEditorBlocks,
 } from "@/lib/schema";
 import {
@@ -24,6 +26,7 @@ import {
   frameBlockSchema,
   imageBlockSchema,
   arrowBlockSchema,
+  drawBlockSchema,
 } from "@/lib/schema";
 import { generateId } from "@/lib/id-generator";
 import ZoomHandler from "./zoomable";
@@ -200,6 +203,30 @@ const blockIntersectsRect = (block: IEditorBlocks, rect: SelectionRect) => {
   const ry2 = rect.y + rect.height;
 
   return !(bx2 < rx1 || bx1 > rx2 || by2 < ry1 || by1 > ry2);
+};
+
+const calculateDrawBounds = (points: number[]) => {
+  const xs: number[] = [];
+  const ys: number[] = [];
+
+  for (let i = 0; i < points.length; i += 2) {
+    xs.push(points[i]);
+    ys.push(points[i + 1]);
+  }
+
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+
+  return {
+    minX,
+    minY,
+    maxX,
+    maxY,
+    width: Math.max(1, maxX - minX),
+    height: Math.max(1, maxY - minY),
+  } as const;
 };
 
 function FrameNode({
@@ -423,6 +450,63 @@ function ArrowNode({
         strokeWidth={block.strokeWidth ?? 4}
         {...shadowProps}
         perfectDrawEnabled={false}
+      />
+    </Group>
+  );
+}
+
+function DrawNode({
+  block,
+  onClick,
+  onDragStart,
+  onDragEnd,
+  onHover,
+  draggable,
+}: {
+  block: IEditorBlockDraw;
+  onClick: (event: KonvaEventObject<MouseEvent | TouchEvent>) => void;
+  onDragStart: (event: KonvaEventObject<DragEvent>) => void;
+  onDragEnd: (position: { x: number; y: number }) => void;
+  onHover: (hovering: boolean) => void;
+  draggable: boolean;
+}) {
+  const { scaleX, scaleY } = getScaleWithFlip(block);
+  const shadowProps = getShadowProps(block);
+
+  return (
+    <Group
+      id={blockNodeId(block.id)}
+      name="canvas-node"
+      x={block.x}
+      y={block.y}
+      width={block.width}
+      height={block.height}
+      rotation={block.rotation ?? 0}
+      scaleX={scaleX}
+      scaleY={scaleY}
+      opacity={getOpacity(block.opacity)}
+      visible={isBlockVisible(block)}
+      draggable={draggable}
+      onClick={onClick}
+      onTap={onClick}
+      onMouseEnter={() => onHover(true)}
+      onMouseLeave={() => onHover(false)}
+      onDragStart={onDragStart}
+      onDragEnd={(event) => {
+        const node = event.target;
+        onDragEnd({ x: node.x(), y: node.y() });
+      }}
+      listening
+    >
+      <KonvaLine
+        points={block.points}
+        stroke={block.stroke ?? "#000000"}
+        strokeWidth={block.strokeWidth ?? 3}
+        tension={block.tension ?? 0}
+        lineCap="round"
+        lineJoin="round"
+        perfectDrawEnabled={false}
+        {...shadowProps}
       />
     </Group>
   );
@@ -835,6 +919,9 @@ function EditorCanvas() {
   const [previewSelectionIds, setPreviewSelectionIds] = React.useState<
     string[]
   >([]);
+  const [isDrawing, setIsDrawing] = React.useState(false);
+  const [drawingPoints, setDrawingPoints] = React.useState<number[]>([]);
+  const drawingPointsRef = React.useRef<number[]>([]);
   const [isSelecting, setIsSelecting] = React.useState(false);
   const [editingText, setEditingText] = React.useState<{
     id: string;
@@ -937,6 +1024,19 @@ function EditorCanvas() {
 
   const isSelectMode = mode === "select";
   const isMoveMode = mode === "move";
+
+  const drawingPreview = React.useMemo(() => {
+    if (!isDrawing || drawingPoints.length < 4) {
+      return null;
+    }
+
+    const bounds = calculateDrawBounds(drawingPoints);
+    const points = drawingPoints.map((value, index) =>
+      index % 2 === 0 ? value - bounds.minX : value - bounds.minY
+    );
+
+    return { bounds, points } as const;
+  }, [drawingPoints, isDrawing]);
 
   const createBlockAtPosition = React.useCallback(
     (
@@ -1089,6 +1189,52 @@ function EditorCanvas() {
     [mode, pendingImageData, setMode, storeApi]
   );
 
+  const finishDrawing = React.useCallback(() => {
+    if (!isDrawing) {
+      return;
+    }
+
+    const points = drawingPointsRef.current;
+    setIsDrawing(false);
+
+    if (points.length < 4) {
+      drawingPointsRef.current = [];
+      setDrawingPoints([]);
+      return;
+    }
+
+    const bounds = calculateDrawBounds(points);
+    const relativePoints = points.map((value, index) =>
+      index % 2 === 0 ? value - bounds.minX : value - bounds.minY
+    );
+
+    const blocks = selectOrderedBlocks(storeApi.getState());
+    const drawBlock = ensureBlockDefaults(
+      drawBlockSchema.parse({
+        id: generateId(),
+        type: "draw",
+        label: `Draw ${blocks.length + 1}`,
+        x: bounds.minX,
+        y: bounds.minY,
+        width: bounds.width,
+        height: bounds.height,
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+        points: relativePoints,
+        stroke: "#000000",
+        strokeWidth: 3,
+        tension: 0,
+        visible: true,
+        opacity: 100,
+      } satisfies IEditorBlockDraw)
+    );
+
+    storeApi.getState().addBlock(drawBlock);
+    drawingPointsRef.current = [];
+    setDrawingPoints([]);
+  }, [isDrawing, storeApi]);
+
   React.useEffect(() => {
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0];
@@ -1200,6 +1346,17 @@ function EditorCanvas() {
         return;
       }
 
+      if (mode === "draw") {
+        const canvasPoint = toCanvasCoordinates(stage, pointer, zoom);
+        const points = [canvasPoint.x, canvasPoint.y];
+        drawingPointsRef.current = points;
+        setDrawingPoints(points);
+        setIsDrawing(true);
+        setSelectedIds([]);
+        setHoveredId(null);
+        return;
+      }
+
       // Handle placement mode - allow placement even on top of existing blocks
       if (isPlacementMode()) {
         handlePlacementMouseDown(stage, pointer);
@@ -1222,6 +1379,12 @@ function EditorCanvas() {
       isMoveMode,
       isPlacementMode,
       isSelectMode,
+      mode,
+      zoom,
+      setSelectedIds,
+      setHoveredId,
+      setIsDrawing,
+      setDrawingPoints,
       handlePlacementMouseDown,
       handleSelectionMouseDown,
     ]
@@ -1230,6 +1393,20 @@ function EditorCanvas() {
   const handleStageMouseMove = React.useCallback(() => {
     const stage = stageRef.current;
     if (!stage) {
+      return;
+    }
+
+    if (isDrawing) {
+      const pointer = getPointerPosition(stage);
+      if (pointer) {
+        const canvasPoint = toCanvasCoordinates(stage, pointer, zoom);
+        const nextPoints = drawingPointsRef.current.concat([
+          canvasPoint.x,
+          canvasPoint.y,
+        ]);
+        drawingPointsRef.current = nextPoints;
+        setDrawingPoints(nextPoints);
+      }
       return;
     }
 
@@ -1270,9 +1447,21 @@ function EditorCanvas() {
       )
       .map((block) => block.id);
     setPreviewSelectionIds(previewIds);
-  }, [blocks, isSelecting, zoom, isPlacingBlock, placementStart]);
+  }, [
+    blocks,
+    isDrawing,
+    isSelecting,
+    zoom,
+    isPlacingBlock,
+    placementStart,
+  ]);
 
   const handleStageMouseUp = React.useCallback(() => {
+    if (isDrawing) {
+      finishDrawing();
+      return;
+    }
+
     // Handle placement completion
     if (isPlacingBlock && placementStart) {
       if (placementCurrent) {
@@ -1345,6 +1534,8 @@ function EditorCanvas() {
     placementCurrent,
     mode,
     createBlockAtPosition,
+    isDrawing,
+    finishDrawing,
   ]);
 
   const handleStageClick = React.useCallback(
@@ -1614,6 +1805,22 @@ function EditorCanvas() {
           points: newPoints,
           // Keep arrowhead size constant - don't update pointerLength or pointerWidth
         });
+      } else if (block.type === "draw") {
+        const drawBlock = block as IEditorBlockDraw;
+        const scaledPoints = drawBlock.points.map((value, index) =>
+          index % 2 === 0 ? value * scaleX : value * scaleY
+        );
+
+        updateBlockValues(id, {
+          x: node.x(),
+          y: node.y(),
+          width,
+          height,
+          rotation,
+          points: scaledPoints,
+          scaleX: 1,
+          scaleY: 1,
+        });
       } else {
         updateBlockValues(id, {
           x: node.x(),
@@ -1739,6 +1946,26 @@ function EditorCanvas() {
           />
         </Layer>
 
+        <Layer listening={false}>
+          {isDrawing && drawingPreview ? (
+            <Group
+              x={drawingPreview.bounds.minX}
+              y={drawingPreview.bounds.minY}
+              listening={false}
+            >
+              <KonvaLine
+                points={drawingPreview.points}
+                stroke="#000000"
+                strokeWidth={3}
+                tension={0}
+                lineCap="round"
+                lineJoin="round"
+                perfectDrawEnabled={false}
+              />
+            </Group>
+          ) : null}
+        </Layer>
+
         <Layer>
           {blocks.map((block) => {
             const handleHover = (hovering: boolean) => {
@@ -1861,6 +2088,15 @@ function EditorCanvas() {
                 <ArrowNode
                   key={block.id}
                   block={block as IEditorBlockArrow}
+                  onClick={handleBlockClick}
+                  {...dragHandlers}
+                />
+              );
+            } else if (block.type === "draw") {
+              content = (
+                <DrawNode
+                  key={block.id}
+                  block={block as IEditorBlockDraw}
                   onClick={handleBlockClick}
                   {...dragHandlers}
                 />

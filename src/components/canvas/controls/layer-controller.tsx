@@ -19,6 +19,24 @@ function LayerController({
   if (!block) {
     return null;
   }
+
+  if (block.type === "draw") {
+    return (
+      <ControllerBox title="Layer" className={className}>
+        <ColorControl
+          name="Color"
+          value={block.stroke}
+          onChange={(value) => {
+            updateBlockValues(blockId, {
+              stroke: value,
+            });
+          }}
+          className="justify-between"
+          disableGradient
+        />
+      </ControllerBox>
+    );
+  }
   return (
     <ControllerBox title="Layer" className={className}>
       <ColorControl

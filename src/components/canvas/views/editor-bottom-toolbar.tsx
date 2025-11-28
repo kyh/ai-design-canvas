@@ -8,6 +8,7 @@ import {
   Download,
   ImageDown,
   Loader2,
+  Pencil,
   PenTool,
   Redo,
   Sparkles,
@@ -390,6 +391,16 @@ function EditorBottomToolbar() {
                       className={cn(mode === "arrow" && "bg-muted")}
                     >
                       {BlockIcon("arrow")}
+                    </Button>
+                  </CustomTooltip>
+                  <CustomTooltip content="Draw" hotkey="D">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setMode("draw")}
+                      className={cn(mode === "draw" && "bg-muted")}
+                    >
+                      <Pencil className="h-4 w-4" />
                     </Button>
                   </CustomTooltip>
                   <Separator orientation="vertical" className="h-7! my-auto" />

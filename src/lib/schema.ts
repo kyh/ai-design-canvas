@@ -138,12 +138,21 @@ export const htmlBlockSchema = blockBaseSchema.extend({
   html: z.string(),
 });
 
+export const drawBlockSchema = blockBaseSchema.extend({
+  type: z.literal("draw"),
+  points: z.array(z.number()).min(4),
+  stroke: z.string().default("#000000"),
+  strokeWidth: z.number().default(3),
+  tension: z.number().default(0),
+});
+
 export const blockSchema = z.discriminatedUnion("type", [
   textBlockSchema,
   frameBlockSchema,
   imageBlockSchema,
   arrowBlockSchema,
   htmlBlockSchema,
+  drawBlockSchema,
 ]);
 
 export const textBlockSchemaWithoutId = textBlockSchema.omit({ id: true });
@@ -160,7 +169,15 @@ export const canvasStateSchema = z.object({
   size: editorSizeSchema,
   zoom: z.number(),
   background: z.string().optional(),
-  mode: z.enum(["move", "select"]),
+  mode: z.enum([
+    "move",
+    "select",
+    "text",
+    "frame",
+    "arrow",
+    "image",
+    "draw",
+  ]),
   isTextEditing: z.boolean(),
   stagePosition: z
     .object({
@@ -188,6 +205,7 @@ export type IEditorBlockFrame = z.infer<typeof frameBlockSchema>;
 export type IEditorBlockImage = z.infer<typeof imageBlockSchema>;
 export type IEditorBlockArrow = z.infer<typeof arrowBlockSchema>;
 export type IEditorBlockHtml = z.infer<typeof htmlBlockSchema>;
+export type IEditorBlockDraw = z.infer<typeof drawBlockSchema>;
 export type IEditorBlockType = IEditorBlocks["type"];
 export type Template = z.infer<typeof templateSchema>;
 export type ICanvasState = z.infer<typeof canvasStateSchema>;
