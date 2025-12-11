@@ -54,8 +54,8 @@ importers:
         specifier: ^1.2.8
         version: 1.2.8(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       '@remotion/google-fonts':
-        specifier: ^4.0.372
-        version: 4.0.372(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+        specifier: ^4.0.384
+        version: 4.0.384(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       ai:
         specifier: ^5.0.110
         version: 5.0.110(zod@4.1.13)
@@ -1011,8 +1011,8 @@ packages:
   '@radix-ui/rect@1.1.1':
     resolution: {integrity: sha512-HPwpGIzkl28mWyZqG52jiqDJ12waP11Pa1lGoiyUkIEuMLBP0oeK/C89esbXrxsky5we7dfd8U58nm0SgAWpVw==}
 
-  '@remotion/google-fonts@4.0.372':
-    resolution: {integrity: sha512-byaPRj9mtKapQ/X3psVvOaDxAt/a5MiGtRhq3BLFvQNwUll703vUgmKmbkvikQpFi50L7j+3ca9+YLJ6211vew==}
+  '@remotion/google-fonts@4.0.384':
+    resolution: {integrity: sha512-BG3Xklh2Lcurd1MaIi/g5RVstnmDAyMcpVTdjbe7Jq+LvfgBUvDShXlT3wr84STO6dIcMGa8OjJ4rb1KHIUOTA==}
 
   '@rtsao/scc@1.1.0':
     resolution: {integrity: sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==}
@@ -2552,8 +2552,8 @@ packages:
     resolution: {integrity: sha512-dYqgNSZbDwkaJ2ceRd9ojCGjBq+mOm9LmtXnAnEGyHhN/5R7iDW2TRw3h+o/jCFxus3P2LfWIIiwowAjANm7IA==}
     engines: {node: '>= 0.4'}
 
-  remotion@4.0.372:
-    resolution: {integrity: sha512-QR9eA9ksszA1hh96hNvxMqw3Eve81ojJktiIdpOiL7OK9lBwh5yPf/BGE4B/Hk8uTQwk7+WzlCuIsUIhN8r6gQ==}
+  remotion@4.0.384:
+    resolution: {integrity: sha512-S3qDIsu8HitlPsdmIxB+tcEXGp9LWXSy5VEjE9Ao0NXRDe0z8etq7H9K+zcYZmLa+DVNFd248WXMkC3M33kK+Q==}
     peerDependencies:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
@@ -3829,9 +3829,9 @@ snapshots:
 
   '@radix-ui/rect@1.1.1': {}
 
-  '@remotion/google-fonts@4.0.372(react-dom@19.2.1(react@19.2.1))(react@19.2.1)':
+  '@remotion/google-fonts@4.0.384(react-dom@19.2.1(react@19.2.1))(react@19.2.1)':
     dependencies:
-      remotion: 4.0.372(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+      remotion: 4.0.384(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
     transitivePeerDependencies:
       - react
       - react-dom
@@ -5528,7 +5528,7 @@ snapshots:
       gopd: 1.2.0
       set-function-name: 2.0.2
 
-  remotion@4.0.372(react-dom@19.2.1(react@19.2.1))(react@19.2.1):
+  remotion@4.0.384(react-dom@19.2.1(react@19.2.1))(react@19.2.1):
     dependencies:
       react: 19.2.1
       react-dom: 19.2.1(react@19.2.1)
