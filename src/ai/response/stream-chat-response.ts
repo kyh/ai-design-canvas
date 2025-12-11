@@ -15,8 +15,8 @@ import type { DataPart } from "../messages/data-parts";
 import type { SelectionBounds } from "@/lib/types";
 import { generateTools } from "../tools";
 import { createLoadingBlock } from "../tools/build-html-block";
-import generatePrompt from "./stream-chat-response-prompt.md";
-import buildPrompt from "./stream-chat-response-build-prompt.md";
+import generatePrompt from "./stream-chat-response-prompt";
+import buildPrompt from "./stream-chat-response-build-prompt";
 
 type ExecuteParams = {
   writer: Parameters<
