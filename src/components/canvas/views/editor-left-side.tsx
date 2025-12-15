@@ -295,7 +295,7 @@ function EditorLeftSide() {
       <div className="border-t border-border p-2 flex items-center justify-between gap-2">
         <div>
           <Button variant="outline" size="icon" asChild>
-            <Link href="https://github.com/kyh/ai-design-canvas">
+            <Link href="https://github.com/kyh/ai-canvas">
               <span className="sr-only">GitHub</span>
               <GitHubLogoIcon className="size-5" />
             </Link>

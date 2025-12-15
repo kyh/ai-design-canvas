@@ -32,7 +32,7 @@ export const demoTemplate1: Template = {
       scaleY: 1,
       visible: true,
       opacity: 100,
-      text: "AI Design Canvas",
+      text: "AI Canvas",
       color: "#ffffff",
       fontSize: 59,
       lineHeight: 77,

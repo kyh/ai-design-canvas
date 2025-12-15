@@ -4,8 +4,8 @@ import { Toaster } from "sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AI Design Canvas",
-  description: "Interactive canvas for editing AI design templates",
+  title: "AI Canvas",
+  description: "Interactive canvas for editing design templates with AI",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

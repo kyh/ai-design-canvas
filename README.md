@@ -1,8 +1,8 @@
-# AI Design Canvas Template
+# AI Canvas Template
 
 <img width="2400" height="1260" alt="CleanShot 2025-11-14 at 09 12 17@2x" src="https://github.com/user-attachments/assets/17abde19-05d3-45b9-8758-d2727b840548" />
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fkyh%2Fai-design-canvas)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fkyh%2Fai-canvas)
 
 This Next.js-based template provides the foundation for creating an interactive canvas application with AI-powered design generation and prototype generation. Build your own Canva, Figma, or tldraw alternative.
 
@@ -45,8 +45,8 @@ This Next.js-based template provides the foundation for creating an interactive 
 1. **Fork or clone this repository**
 
 ```bash
-git clone https://github.com/kyh/ai-design-canvas.git
-cd ai-design-canvas
+git clone https://github.com/kyh/ai-canvas.git
+cd ai-canvas
 ```
 
 2. **Install dependencies**
