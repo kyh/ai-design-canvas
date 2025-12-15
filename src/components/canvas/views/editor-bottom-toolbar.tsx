@@ -3,7 +3,6 @@
 import * as React from "react";
 import { CursorArrowIcon, HandIcon } from "@radix-ui/react-icons";
 import {
-  ArrowLeftRight,
   ClipboardCopy,
   Download,
   ImageDown,
@@ -11,6 +10,7 @@ import {
   Pencil,
   PenTool,
   Redo,
+  Send,
   Sparkles,
   Undo,
 } from "lucide-react";
@@ -26,10 +26,6 @@ import type { DataPart } from "@/ai/messages/data-parts";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import CustomTooltip from "@/components/ui/tooltip";
-import {
-  ButtonGroup,
-  ButtonGroupSeparator,
-} from "@/components/ui/buttons-group";
 import { useEditorStore } from "../use-editor";
 import { BlockIcon } from "../utils";
 import { useShallow } from "zustand/react/shallow";
@@ -40,7 +36,10 @@ import {
 } from "../services/export";
 import { EXPORT_PADDING } from "../utils/constants";
 import type { SelectionBounds } from "@/lib/types";
-import { ApiKeyDialog, OPENAI_API_KEY_STORAGE_KEY } from "../../api-key-dialog";
+import {
+  ApiKeyDialog,
+  GATEWAY_API_KEY_STORAGE_KEY,
+} from "../../api-key-dialog";
 import { transport } from "../../demo-transport";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { Separator } from "@/components/ui/separator";
@@ -48,6 +47,7 @@ import {
   InputGroup,
   InputGroupTextarea,
   InputGroupAddon,
+  InputGroupButton,
 } from "@/components/ui/input-group";
 import {
   DropdownMenu,
@@ -57,9 +57,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 function EditorBottomToolbar() {
-  const [toolbarMode, setToolbarMode] = React.useState<"design" | "ai">(
-    "design"
-  );
+  const [toolbarMode, setToolbarMode] = React.useState<"design" | "ai">("ai");
   const imageInputRef = React.useRef<HTMLInputElement>(null);
   const [mode, setMode] = useEditorStore(
     useShallow((state) => [state.canvas.mode, state.setMode])
@@ -87,10 +85,9 @@ function EditorBottomToolbar() {
 
   // AI Prompt state
   const [input, setInput] = React.useState("");
-  const [aiMode, setAiMode] = React.useState<"generate" | "build">("generate");
   const [showApiKeyModal, setShowApiKeyModal] = React.useState(false);
   const [apiKey, , removeApiKey] = useLocalStorage<string>(
-    OPENAI_API_KEY_STORAGE_KEY,
+    GATEWAY_API_KEY_STORAGE_KEY,
     ""
   );
 
@@ -110,7 +107,9 @@ function EditorBottomToolbar() {
 
       if (isAuthError) {
         removeApiKey();
-        toast.error("Invalid API key. Please enter a valid OpenAI API key.");
+        toast.error(
+          "Invalid API key. Please enter a valid Vercel Gateway API key."
+        );
         setShowApiKeyModal(true);
       } else {
         toast.error(error.message || "Failed to generate block");
@@ -182,45 +181,37 @@ function EditorBottomToolbar() {
   }, [blocks, canvasBackground, canvasSize]);
 
   const handleSubmit = React.useCallback(
-    async (e: React.FormEvent, overrideMode?: "generate" | "build") => {
+    async (e: React.FormEvent) => {
       e.preventDefault();
       if (!input.trim() || isLoading) return;
 
-      const modeToUse = overrideMode ?? aiMode;
-
       const buildRequestBody = (selectionBounds?: SelectionBounds | null) => ({
-        ...(apiKey ? { openaiApiKey: apiKey } : {}),
-        mode: modeToUse,
+        ...(apiKey ? { gatewayApiKey: apiKey } : {}),
         ...(selectionBounds ? { selectionBounds } : {}),
       });
 
       try {
-        let canvasImage: string | null = null;
-        let selectionBounds: SelectionBounds | null = null;
+        // Always capture canvas image for backend to determine mode
+        const canvasImage = await captureSelectedBlocksAsImage(
+          stage,
+          blocks,
+          selectedIds
+        );
 
-        if (modeToUse === "build") {
-          canvasImage = await captureSelectedBlocksAsImage(
-            stage,
+        let selectionBounds: SelectionBounds | null = null;
+        if (selectedIds.length > 0) {
+          const boundsWithPadding = calculateSelectedBlocksBounds(
             blocks,
             selectedIds
           );
-
-          if (selectedIds.length > 0) {
-            const boundsWithPadding = calculateSelectedBlocksBounds(
-              blocks,
-              selectedIds
-            );
-            if (boundsWithPadding) {
-              selectionBounds = {
-                x: boundsWithPadding.x + EXPORT_PADDING,
-                y: boundsWithPadding.y + EXPORT_PADDING,
-                width: boundsWithPadding.width - EXPORT_PADDING * 2,
-                height: boundsWithPadding.height - EXPORT_PADDING * 2,
-              };
-            }
+          if (boundsWithPadding) {
+            selectionBounds = {
+              x: boundsWithPadding.x + EXPORT_PADDING,
+              y: boundsWithPadding.y + EXPORT_PADDING,
+              width: boundsWithPadding.width - EXPORT_PADDING * 2,
+              height: boundsWithPadding.height - EXPORT_PADDING * 2,
+            };
           }
-        } else {
-          canvasImage = await captureSelectedBlocksAsImage(stage, blocks, []);
         }
 
         const filePart = canvasImage
@@ -244,7 +235,6 @@ function EditorBottomToolbar() {
     [
       input,
       isLoading,
-      aiMode,
       apiKey,
       sendMessage,
       stage,
@@ -296,27 +286,13 @@ function EditorBottomToolbar() {
         setToolbarMode((prev) => (prev === "design" ? "ai" : "design"));
         return;
       }
-
-      // Handle Cmd+B / Ctrl+B to switch to build mode and submit
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "b") {
-        // Only handle if we're in AI mode and have input
-        if (toolbarMode === "ai" && input.trim() && !isLoading) {
-          event.preventDefault();
-          setAiMode("build");
-          const formEvent = new Event("submit", {
-            bubbles: true,
-            cancelable: true,
-          }) as unknown as React.FormEvent;
-          handleSubmit(formEvent, "build");
-        }
-      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [setToolbarMode, toolbarMode, input, isLoading, setAiMode, handleSubmit]);
+  }, [setToolbarMode, toolbarMode, input, isLoading, handleSubmit]);
 
   return (
     <>
@@ -456,7 +432,7 @@ function EditorBottomToolbar() {
               </TabsContent>
 
               <TabsContent value="ai" className="mt-0">
-                <InputGroup className="min-w-[300px]">
+                <InputGroup className="min-w-[300px] pr-1">
                   <InputGroupTextarea
                     ref={textareaRef}
                     value={input}
@@ -467,57 +443,27 @@ function EditorBottomToolbar() {
                     disabled={isLoading}
                     rows={1}
                     className={cn(
-                      "min-h-[24px] max-h-[120px] text-base text-foreground overflow-y-auto p-2",
+                      "min-h-[24px] max-h-[120px] text-foreground overflow-y-auto p-2",
                       "placeholder:text-muted-foreground/50"
                     )}
                   />
-                  <InputGroupAddon align="inline-end" className="gap-2">
-                    <ButtonGroup>
-                      <Button
-                        type="submit"
-                        onClick={handleSubmit}
-                        disabled={!input.trim() || isLoading}
-                        variant="outline"
-                        size="sm"
-                        className="capitalize"
-                      >
-                        {isLoading ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : null}
-                        {aiMode === "generate" ? "Generate" : "Build"}
-                      </Button>
-                      <ButtonGroupSeparator />
-                      <CustomTooltip content="Switch mode">
-                        <Button
-                          size="icon-sm"
-                          variant="outline"
-                          disabled={isLoading}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setAiMode(
-                              aiMode === "generate" ? "build" : "generate"
-                            );
-                          }}
-                        >
-                          <ArrowLeftRight className="h-4 w-4" />
-                        </Button>
-                      </CustomTooltip>
-                    </ButtonGroup>
+                  <InputGroupAddon align="inline-end">
+                    <InputGroupButton
+                      variant="secondary"
+                      type="submit"
+                      onClick={handleSubmit}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <Send />
+                      )}
+                    </InputGroupButton>
                   </InputGroupAddon>
                 </InputGroup>
               </TabsContent>
               <TabsList>
-                <CustomTooltip content="Design Mode">
-                  <TabsTrigger
-                    value="design"
-                    className={cn(
-                      toolbarMode === "design" &&
-                        "bg-background shadow-sm dark:text-foreground dark:border-input dark:bg-input/30"
-                    )}
-                  >
-                    <PenTool className="h-3 w-3" />
-                  </TabsTrigger>
-                </CustomTooltip>
                 <CustomTooltip content="AI Mode">
                   <TabsTrigger
                     value="ai"
@@ -527,6 +473,17 @@ function EditorBottomToolbar() {
                     )}
                   >
                     <Sparkles className="h-3 w-3" />
+                  </TabsTrigger>
+                </CustomTooltip>
+                <CustomTooltip content="Design Mode">
+                  <TabsTrigger
+                    value="design"
+                    className={cn(
+                      toolbarMode === "design" &&
+                        "bg-background shadow-sm dark:text-foreground dark:border-input dark:bg-input/30"
+                    )}
+                  >
+                    <PenTool className="h-3 w-3" />
                   </TabsTrigger>
                 </CustomTooltip>
               </TabsList>

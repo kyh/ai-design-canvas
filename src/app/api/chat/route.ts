@@ -8,14 +8,17 @@ import type { SelectionBounds } from "@/lib/types";
 
 type BodyData = {
   messages: GenerateModeChatUIMessage[] | BuildModeChatUIMessage[];
-  openaiApiKey?: string;
-  mode?: "generate" | "build";
+  gatewayApiKey?: string;
   selectionBounds?: SelectionBounds;
 };
 
 export async function POST(request: Request) {
   const bodyData = (await request.json()) as BodyData;
-  const { messages, openaiApiKey, mode, selectionBounds } = bodyData;
+  const { messages, gatewayApiKey, selectionBounds } = bodyData;
 
-  return streamChatResponse(messages, openaiApiKey, mode, selectionBounds);
+  if (!gatewayApiKey) {
+    return new Response("Gateway API key is required", { status: 400 });
+  }
+
+  return streamChatResponse(messages, gatewayApiKey, selectionBounds);
 }

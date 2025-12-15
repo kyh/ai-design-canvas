@@ -14,7 +14,7 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 
-export const OPENAI_API_KEY_STORAGE_KEY = "openai-api-key";
+export const GATEWAY_API_KEY_STORAGE_KEY = "gateway-api-key";
 
 interface ApiKeyDialogProps {
   open: boolean;
@@ -23,7 +23,7 @@ interface ApiKeyDialogProps {
 
 export function ApiKeyDialog({ open, onOpenChange }: ApiKeyDialogProps) {
   const [apiKey, setApiKey, removeApiKey] = useLocalStorage<string>(
-    OPENAI_API_KEY_STORAGE_KEY,
+    GATEWAY_API_KEY_STORAGE_KEY,
     ""
   );
   const [apiKeyInput, setApiKeyInput] = React.useState("");
@@ -49,16 +49,16 @@ export function ApiKeyDialog({ open, onOpenChange }: ApiKeyDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Enter OpenAI API Key</DialogTitle>
+          <DialogTitle>Enter Vercel Gateway API Key</DialogTitle>
           <DialogDescription>
-            Please enter your OpenAI API key to use AI features. Your key will
-            be stored locally in your browser.
+            Please enter your Vercel Gateway API key to use AI features. Your
+            key will be stored locally in your browser.
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 flex flex-col gap-2">
           <Input
             type="password"
-            placeholder="sk-..."
+            placeholder="vck_..."
             value={apiKeyInput}
             onChange={(e) => setApiKeyInput(e.target.value)}
             onKeyDown={(e) => {

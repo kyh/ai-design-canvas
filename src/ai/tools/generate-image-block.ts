@@ -1,6 +1,9 @@
-import type { UIMessage, UIMessageStreamWriter } from "ai";
-import { experimental_generateImage as generateImage, tool } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
+import type { ImageModel, UIMessage, UIMessageStreamWriter } from "ai";
+import {
+  createGateway,
+  experimental_generateImage as generateImage,
+  tool,
+} from "ai";
 import { imageBlockSchemaWithoutId } from "@/lib/schema";
 import { createBlockWithId } from "./utils";
 
@@ -83,26 +86,29 @@ Use Generate Image Block to add AI-generated images to the canvas. This tool ALW
 
 type Params = {
   writer: UIMessageStreamWriter<UIMessage<never, DataPart>>;
-  openaiApiKey?: string;
+  gatewayApiKey?: string;
 };
 
-export const generateImageBlock = ({ writer, openaiApiKey }: Params) =>
+export const generateImageBlock = ({ writer, gatewayApiKey }: Params) =>
   tool({
     description,
     inputSchema: imageBlockSchemaWithoutId,
     execute: async (block, { toolCallId }) => {
       const imagePrompt = block.prompt || block.label;
 
-      if (!openaiApiKey) {
-        throw new Error("OpenAI API key is required for image generation");
+      if (!gatewayApiKey) {
+        throw new Error("Gateway API key is required for image generation");
       }
 
       let imageUrl: string;
 
       try {
-        const openai = createOpenAI({ apiKey: openaiApiKey });
+        const model = createGateway({ apiKey: gatewayApiKey })(
+          "openai/dall-e-3"
+        ) as unknown as ImageModel;
+
         const { images } = await generateImage({
-          model: openai.image("dall-e-3"),
+          model,
           prompt: imagePrompt,
           n: 1,
           size: "1024x1024",

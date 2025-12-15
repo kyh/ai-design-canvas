@@ -1,11 +1,13 @@
 import {
   convertToModelMessages,
+  createGateway,
   createUIMessageStream,
   createUIMessageStreamResponse,
+  generateObject,
   stepCountIs,
   streamText,
+  LanguageModel,
 } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
 
 import type {
   BuildModeChatUIMessage,
@@ -17,6 +19,7 @@ import { generateTools } from "../tools";
 import { createLoadingBlock } from "../tools/build-html-block";
 import generatePrompt from "./stream-chat-response-prompt";
 import buildPrompt from "./stream-chat-response-build-prompt";
+import { z } from "zod";
 
 type ExecuteParams = {
   writer: Parameters<
@@ -27,29 +30,20 @@ type ExecuteParams = {
 const executeGenerateMode = ({
   writer,
   messages,
-  openaiApiKey,
+  model,
+  gatewayApiKey,
 }: ExecuteParams & {
   messages: GenerateModeChatUIMessage[];
-  openaiApiKey?: string;
+  model: LanguageModel;
+  gatewayApiKey: string;
 }) => {
-  if (!openaiApiKey) {
-    throw new Error("OpenAI API key is required");
-  }
-
-  const model =
-    openaiApiKey === process.env.SECRET_KEY
-      ? "openai/gpt-5.1-instant"
-      : createOpenAI({
-          apiKey: openaiApiKey,
-        })("gpt-5.1-instant");
-
   const result = streamText({
     model,
     system: generatePrompt,
     messages: convertToModelMessages(messages),
     stopWhen: stepCountIs(5),
     toolChoice: "required",
-    tools: generateTools({ writer, openaiApiKey }),
+    tools: generateTools({ writer, gatewayApiKey }),
     onError: () => {
       // Error handling is done via toast notifications in the UI
     },
@@ -67,23 +61,14 @@ const executeBuildMode = ({
   writer,
   messages,
   selectionBounds,
-  openaiApiKey,
+  model,
+  gatewayApiKey,
 }: ExecuteParams & {
   messages: BuildModeChatUIMessage[];
   selectionBounds?: SelectionBounds;
-  openaiApiKey?: string;
+  model: LanguageModel;
+  gatewayApiKey: string;
 }) => {
-  if (!openaiApiKey) {
-    throw new Error("OpenAI API key is required");
-  }
-
-  const model =
-    openaiApiKey === process.env.SECRET_KEY
-      ? "anthropic/claude-haiku-4.5"
-      : createOpenAI({
-          apiKey: openaiApiKey,
-        })("gpt-5-mini");
-
   // Create loading block immediately
   const loadingBlock = createLoadingBlock(selectionBounds);
   const blockId = loadingBlock.id;
@@ -142,12 +127,30 @@ const executeBuildMode = ({
   );
 };
 
-export const streamChatResponse = (
+export const streamChatResponse = async (
   messages: BuildModeChatUIMessage[] | GenerateModeChatUIMessage[],
-  openaiApiKey?: string,
-  mode: "generate" | "build" = "generate",
+  gatewayApiKey: string,
   selectionBounds?: SelectionBounds
 ) => {
+  const model = createGateway({
+    apiKey:
+      gatewayApiKey === process.env.SECRET_KEY
+        ? process.env.AI_GATEWAY_API_KEY
+        : gatewayApiKey,
+  })("openai/gpt-5.1-instant");
+
+  const {
+    object: { mode },
+  } = await generateObject({
+    system:
+      "Determine what the user is asking for based on the messages. The user is either asking for you to generate a design, or to build a website from a design. By default, assume the user is asking for you to generate a design.",
+    messages: convertToModelMessages(messages),
+    model,
+    schema: z.object({
+      mode: z.enum(["generate", "build"]),
+    }),
+  });
+
   return createUIMessageStreamResponse({
     stream: createUIMessageStream({
       originalMessages: messages,
@@ -158,7 +161,8 @@ export const streamChatResponse = (
               writer,
               messages: messages as BuildModeChatUIMessage[],
               selectionBounds,
-              openaiApiKey,
+              model,
+              gatewayApiKey,
             });
             break;
           case "generate":
@@ -166,7 +170,8 @@ export const streamChatResponse = (
             executeGenerateMode({
               writer,
               messages: messages as GenerateModeChatUIMessage[],
-              openaiApiKey,
+              model,
+              gatewayApiKey,
             });
             break;
         }
